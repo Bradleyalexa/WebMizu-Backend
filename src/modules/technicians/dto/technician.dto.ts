@@ -1,19 +1,10 @@
 import { z } from "zod";
-
-// Create Schema
-export const createTechnicianSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phone: z.string().optional().nullable(),
-  photo_url: z.string().url("Invalid URL").optional().nullable().or(z.literal("")),
-  notes: z.string().optional().nullable(),
-});
-
-// Update Schema (Partial)
-export const updateTechnicianSchema = createTechnicianSchema.partial();
+import { createTechnicianSchema, updateTechnicianSchema } from "../schemas/technician.schema";
 
 // TS Types inferred from Zod
 export type CreateTechnicianDTO = z.infer<typeof createTechnicianSchema>;
 export type UpdateTechnicianDTO = z.infer<typeof updateTechnicianSchema>;
+
 
 // Response DTO
 export interface TechnicianResponseDTO {

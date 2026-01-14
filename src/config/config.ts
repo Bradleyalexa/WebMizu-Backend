@@ -9,6 +9,6 @@ export const config = {
     anonKey: process.env.SUPABASE_ANON_KEY!,
   },
   server: {
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 3001,
   },
 };

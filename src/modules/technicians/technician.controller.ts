@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { TechnicianService } from "./technician.service";
-import { createTechnicianSchema, updateTechnicianSchema, TechnicianResponseDTO } from "./dto/technician.dto";
+import { TechnicianResponseDTO } from "./dto/technician.dto";
+import { createTechnicianSchema, updateTechnicianSchema } from "./schemas/technician.schema";
 import { SuccessResponse } from "../../../../../packages/types/api/response";
 import { z } from "zod";
 
