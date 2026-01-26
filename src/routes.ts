@@ -39,6 +39,16 @@ routes.patch("/technicians/:id", authGuard, roleGuard("admin"), technicianContro
 routes.use("/products", productRouter);
 routes.use("/categories", categoryRouter);
 
+// Customer Product Routes
+import { CustomerProductController } from "./modules/customer-products/customer-product.controller";
+const customerProductController = new CustomerProductController();
+
+routes.post("/customer-products", authGuard, roleGuard("admin"), customerProductController.create);
+routes.get("/customer-products/customer/:customerId", authGuard, roleGuard("admin"), customerProductController.getByCustomer);
+routes.get("/customer-products/:id", authGuard, roleGuard("admin"), customerProductController.getOne);
+routes.patch("/customer-products/:id", authGuard, roleGuard("admin"), customerProductController.update);
+
+
 // Health Check
 routes.get("/health", (req, res) => {
   res.json({ success: true, status: "ok" });
