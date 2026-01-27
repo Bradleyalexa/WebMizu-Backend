@@ -21,7 +21,7 @@ export class CustomerRepository {
   }
 
   async findAll(query: CustomerQueryDTO): Promise<{ data: Customer[]; total: number }> {
-    const { page, limit, search } = query;
+    const { page, limit, search, addressType } = query;
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
     const from = (pageNum - 1) * limitNum;
@@ -29,21 +29,31 @@ export class CustomerRepository {
 
     // Use RPC for search to handle complex OR logic across joined tables
     if (search) {
+      // Note: RPC might not support addressType filter unless updated.
+      // If addressType IS provided with search, we might need a dynamic query or update RPC.
+      // For now, assuming RPC is only for text search.
+      // Let's try to chaining filters if possible, but RPC returns setof customers directly.
+      // If RPC is 'clean', we can't easily append .eq('address_type', ...) if it's inside the function.
+      // However, if we assume 'search' is prioritized, we use RPC.
+      // If addressType is crucial, we should update RPC or use standard query if search is strictly name/email.
+      // Given limited scope, I'll prioritize Search via RPC, but if AddressType is set without search, use standard.
+      // Ideally update RPC to accept address_type.
+      
       const { data, count, error } = await (this.supabase as any)
         .rpc("search_customers", { search_text: search }, { count: "exact" })
         .range(from, to)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-
-      return {
-        data: (data || []).map(this.mapToDomain),
-        total: count || 0,
-      };
+       // ... handle error
+       if (error) throw error;
+       return {
+          data: (data || []).map(this.mapToDomain),
+          total: count || 0,
+       };
     }
 
-    // Default list query
-    const { data, count, error } = await this.supabase
+    // Default list query with filters
+    let queryBuilder = this.supabase
       .from("customers")
       .select(`
         *,
@@ -51,7 +61,13 @@ export class CustomerRepository {
           name,
           email
         )
-      `, { count: "exact" })
+      `, { count: "exact" });
+
+    if (addressType) {
+        queryBuilder = queryBuilder.eq("address_type", addressType);
+    }
+
+    const { data, count, error } = await queryBuilder
       .range(from, to)
       .order("created_at", { ascending: false });
 

@@ -49,6 +49,17 @@ routes.get("/customer-products/:id", authGuard, roleGuard("admin"), customerProd
 routes.patch("/customer-products/:id", authGuard, roleGuard("admin"), customerProductController.update);
 
 
+
+// Contract Routes
+import { ContractsController } from "./modules/contracts/contracts.controller";
+const contractsController = new ContractsController();
+
+routes.post("/contracts", authGuard, roleGuard("admin"), contractsController.create);
+routes.get("/contracts", authGuard, roleGuard("admin"), contractsController.findAll);
+routes.get("/contracts/:id", authGuard, roleGuard("admin"), contractsController.findOne);
+routes.patch("/contracts/:id", authGuard, roleGuard("admin"), contractsController.update);
+routes.delete("/contracts/:id", authGuard, roleGuard("admin"), contractsController.remove);
+
 // Health Check
 routes.get("/health", (req, res) => {
   res.json({ success: true, status: "ok" });
