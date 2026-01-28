@@ -60,6 +60,18 @@ routes.get("/contracts/:id", authGuard, roleGuard("admin"), contractsController.
 routes.patch("/contracts/:id", authGuard, roleGuard("admin"), contractsController.update);
 routes.delete("/contracts/:id", authGuard, roleGuard("admin"), contractsController.remove);
 
+// Jobs Routes
+import jobsRouter from "./modules/jobs";
+routes.use("/jobs", authGuard, roleGuard("admin"), jobsRouter);
+
+// Schedule Routes
+// Schedule Routes
+import schedulesRouter from "./modules/schedules";
+import tasksRouter from "./modules/tasks";
+
+routes.use("/schedules", authGuard, roleGuard("admin"), schedulesRouter);
+routes.use("/tasks", authGuard, roleGuard("admin"), tasksRouter);
+
 // Health Check
 routes.get("/health", (req, res) => {
   res.json({ success: true, status: "ok" });
