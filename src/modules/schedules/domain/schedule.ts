@@ -1,5 +1,6 @@
 export interface Schedule {
   id: string;
+  customerId: string;
   customerProductId: string;
   contractId?: string;
   jobId?: string;
@@ -12,5 +13,6 @@ export interface Schedule {
   jobName?: string;
   customerName?: string;
   productName?: string;
+  productModel?: string;
   address?: string;
 }

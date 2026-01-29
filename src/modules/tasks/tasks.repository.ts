@@ -62,8 +62,25 @@ export class TasksRepository {
     }
     
     if (search) {
-        // Search by title or customer name is complex with join, simplest is title first
-        queryBuilder = queryBuilder.ilike("title", `%${search}%`);
+        // Robust search: Customer Name OR Title OR Description
+        console.log("Searching Tasks for:", search);
+        
+        // 1. Find matching Customer IDs via Profiles
+        const { data: matchingProfiles, error: profileError } = await supabaseAdmin
+             .from('profiles')
+             .select('id')
+             .ilike('name', `%${search}%`);
+        
+        if (profileError) console.error("Task Search Profile Error:", profileError);
+        const customerIds = matchingProfiles ? matchingProfiles.map((p: any) => p.id) : [];
+        const customerIdsString = customerIds.join(',');
+
+        let orQuery = `title.ilike.%${search}%,description.ilike.%${search}%`;
+        if (customerIds.length > 0) {
+            orQuery += `,customer_id.in.(${customerIdsString})`;
+        }
+        
+        queryBuilder = queryBuilder.or(orQuery);
     }
 
     const { data, count, error } = await queryBuilder

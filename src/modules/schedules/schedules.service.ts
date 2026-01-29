@@ -15,23 +15,36 @@ export class SchedulesService {
   }
 
   async findAll(query: ScheduleQueryDTO) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    
+    // Override pagination for fetching to ensure we get all data for aggregation
+    // This effectively moves pagination to in-memory, which is necessary for
+    // cross-table sorting and merging without complex SQL views.
+    const fetchQuery = { ...query, page: "1", limit: "1000" };
+    
+    // RESTORED VARIABLES
     const { status } = query;
     let unified: any[] = [];
 
     // 1. Pending Data (Future/Current)
-    if (!status || status === 'pending') {
-        const { data: schedules } = await this.repository.findAll(query);
-        const { data: tasks } = await this.tasksRepo.findAll({ limit: "100", status: "pending" });
+    if (!status || status === 'pending' || status === 'scheduled') {
+        const { data: schedules } = await this.repository.findAll(fetchQuery);
         
-        // Filter strictly for service tasks
-        const serviceTasks = tasks.filter(t => (t as any).task_type === 'service');
-
+        let serviceTasks: any[] = [];
+        // Only fetch pending tasks if we are NOT strictly filtering for 'scheduled'
+        // If status is 'scheduled', we only want the Scheduled items (from schedules repo)
+        if (status !== 'scheduled') {
+            const { data: tasks } = await this.tasksRepo.findAll({ limit: "1000", status: "pending", search: query.search });
+            serviceTasks = tasks;
+        }
+        
         unified = [
             ...unified,
             ...schedules.map(s => ({
                 ...s,
                 source: 'schedule',
-                displayStatus: 'pending', // Schedules are by definition planned/pending
+                displayStatus: s.status, // Use actual status (pending/scheduled)
                 date: s.expectedDate,
                 type: 'Planned (Contract)'
             })),
@@ -58,9 +71,9 @@ export class SchedulesService {
 
     // 2. Completed Data (History)
     if (!status || status === 'done' || status === 'completed') {
-        const { data: tasks } = await this.tasksRepo.findAll({ limit: "100", status: "completed" });
-        const serviceTasks = tasks.filter(t => (t as any).task_type === 'service');
-        const logs = await this.logsRepo.findAll();
+        const { data: tasks } = await this.tasksRepo.findAll({ limit: "1000", status: "completed", search: query.search });
+        const serviceTasks = tasks; // Include all
+        const logs = await this.logsRepo.findAll(query.search);
 
         unified = [
             ...unified,
@@ -106,8 +119,8 @@ export class SchedulesService {
 
     // 3. Canceled Data
     if (!status || status === 'canceled') {
-        const { data: tasks } = await this.tasksRepo.findAll({ limit: "100", status: "canceled" });
-        const serviceTasks = tasks.filter(t => (t as any).task_type === 'service');
+        const { data: tasks } = await this.tasksRepo.findAll({ limit: "1000", status: "canceled", search: query.search });
+        const serviceTasks = tasks; // Include all
         
         unified = [
             ...unified,
@@ -133,11 +146,29 @@ export class SchedulesService {
         ];
     }
 
+    // IN-MEMORY SEARCH FILTER (Robustness)
+    if (query.search) {
+        const lowerSearch = query.search.toLowerCase();
+        unified = unified.filter(item => {
+            return (
+                (item.customerName && item.customerName.toLowerCase().includes(lowerSearch)) ||
+                (item.productName && item.productName.toLowerCase().includes(lowerSearch)) ||
+                (item.jobName && item.jobName.toLowerCase().includes(lowerSearch)) ||
+                (item.notes && item.notes.toLowerCase().includes(lowerSearch))
+            );
+        });
+    }
+
     // Sort Descending (Newest First) for easy viewing
     unified.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+    // Apply Pagination In-Memory
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = unified.slice(startIndex, endIndex);
+
     return { 
-        data: unified, 
+        data: paginatedData, 
         total: unified.length 
     };
   }

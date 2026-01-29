@@ -14,7 +14,13 @@ export const updateScheduleSchema = createScheduleSchema.partial();
 export const scheduleQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
+  status: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.string().optional(), // 'pending', 'scheduled', 'done'
+  search: z.string().optional(),
 });
+
+export type CreateScheduleDTO = z.infer<typeof createScheduleSchema>;
+export type UpdateScheduleDTO = z.infer<typeof updateScheduleSchema>;
+export type ScheduleQueryDTO = z.infer<typeof scheduleQuerySchema>;
+

@@ -8,6 +8,7 @@ export class SchedulesRepository {
   private mapToDomain(row: any): Schedule {
     return {
       id: row.id,
+      customerId: row.customer_products?.customers?.id,
       customerProductId: row.customer_product_id,
       contractId: row.contract_id,
       jobId: row.job_id,
@@ -43,7 +44,7 @@ export class SchedulesRepository {
           product_catalog ( name, model ),
           customers!inner (
             id,
-            profiles ( name )
+            profiles!inner ( name )
           )
         )
       `, { count: "exact" });
@@ -51,6 +52,51 @@ export class SchedulesRepository {
     if (status) queryBuilder = queryBuilder.eq("status", status);
     if (startDate) queryBuilder = queryBuilder.gte("expected_date", startDate);
     if (endDate) queryBuilder = queryBuilder.lte("expected_date", endDate);
+    if (query.search) {
+       // 3-step search refactored for maximum robustness:
+       // 1. Find matching Profile IDs (which are Customer IDs)
+       console.log("Searching Profiles for:", query.search);
+       const { data: matchingProfiles, error: profileError } = await supabaseAdmin
+         .from('profiles')
+         .select('id')
+         .ilike('name', `%${query.search}%`);
+       
+       if (profileError) console.error("Search Step 1 (Profiles) Error:", profileError);
+
+       const customerIds = matchingProfiles ? matchingProfiles.map((p: any) => p.id) : [];
+       let matchedProductIds: string[] = [];
+
+       // 2. Find Products for these Customers
+       if (customerIds.length > 0) {
+           const { data: matchingProducts, error: productError } = await supabaseAdmin
+             .from('customer_products')
+             .select('id')
+             .in('customer_id', customerIds); // Assuming customer_id FK links to customers(id) which matches profiles(id)
+             
+           if (productError) console.error("Search Step 2 (Products) Error:", productError);
+           matchedProductIds = matchingProducts ? matchingProducts.map((p: any) => p.id) : [];
+       }
+
+       // 3. Find Schedule IDs for these Products
+       let matchedScheduleIds: string[] = [];
+       if (matchedProductIds.length > 0) {
+            const { data: matchingSchedules, error: scheduleError } = await supabaseAdmin
+             .from(this.table)
+             .select('id')
+             .in('customer_product_id', matchedProductIds);
+            
+            if (scheduleError) console.error("Search Step 3 (Schedules) Error:", scheduleError);
+            matchedScheduleIds = matchingSchedules ? matchingSchedules.map((s: any) => s.id) : [];
+       }
+
+       // 4. Apply Filter
+       if (matchedScheduleIds.length > 0) {
+           const idsString = matchedScheduleIds.join(',');
+           queryBuilder = queryBuilder.or(`notes.ilike.%${query.search}%,id.in.(${idsString})`);
+       } else {
+           queryBuilder = queryBuilder.ilike("notes", `%${query.search}%`);
+       }
+    }
 
     const { data, count, error } = await queryBuilder
       .range(from, to)
@@ -73,7 +119,7 @@ export class SchedulesRepository {
         customer_products (
           id,
           installation_location,
-          product_catalog ( name ),
+          product_catalog ( name, model ),
           customers (
             id,
             profiles ( name )

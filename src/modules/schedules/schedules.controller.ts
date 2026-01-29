@@ -31,13 +31,17 @@ export class SchedulesController {
       const query = scheduleQuerySchema.parse(req.query);
       const { data, total } = await this.service.findAll(query);
       
-      const response: SuccessResponse<typeof data> = {
+
+      res.json({
         success: true,
         data,
+        meta: {
+            total,
+            page: Number(query.page) || 1,
+            limit: Number(query.limit) || 10,
+        },
         error: null
-      };
-      // Send meta in headers or extend type if needed, or follow pattern
-      res.json(response); 
+      }); 
     } catch (err) {
       next(err);
     }
