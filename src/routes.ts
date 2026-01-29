@@ -68,9 +68,11 @@ routes.use("/jobs", authGuard, roleGuard("admin"), jobsRouter);
 // Schedule Routes
 import schedulesRouter from "./modules/schedules";
 import tasksRouter from "./modules/tasks";
+import serviceLogsRouter from "./modules/service-logs";
 
 routes.use("/schedules", authGuard, roleGuard("admin"), schedulesRouter);
 routes.use("/tasks", authGuard, roleGuard("admin"), tasksRouter);
+routes.use("/service-logs", authGuard, roleGuard("admin"), serviceLogsRouter);
 
 // Health Check
 routes.get("/health", (req, res) => {

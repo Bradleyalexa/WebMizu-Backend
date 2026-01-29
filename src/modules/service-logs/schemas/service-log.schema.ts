@@ -10,8 +10,9 @@ export const createServiceLogSchema = z.object({
   harga_service: z.number().min(0).optional().default(0),
   teknisi_fee: z.number().min(0).optional().default(0),
   job_evidence: z.array(z.string()).optional(), // Array of URLs
-  expected_id: z.string().uuid().optional().or(z.literal("")), // Allow empty string or UUID
-  job_id: z.string().uuid().optional().or(z.literal("")),
+  expected_id: z.string().uuid().nullish().or(z.literal("")), // Allow empty string, null, undefined or UUID
+  job_id: z.string().uuid().nullish().or(z.literal("")),
+  task_id: z.string().uuid().nullish().or(z.literal("")),
 });
 
 export const updateServiceLogSchema = createServiceLogSchema.partial();

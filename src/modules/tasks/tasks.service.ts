@@ -73,11 +73,31 @@ export class TasksService {
 
   async findById(id: string) {
     const task = await this.repository.findById(id);
-    if (task) return task;
+    if (task) {
+        console.log(`[DEBUG] Task Found: ${task.id}, Status: ${task.status}, ExpectedID: ${task.expectedId}`);
+        
+        // 1. Try finding log by Task ID (for Manual Tasks or linked ones)
+        let serviceLog = await this.logsRepo.findByTaskId(task.id);
+        
+        // 2. Fallback: Try Expected ID (Schedule) if not found and link exists
+        if (!serviceLog && task.expectedId) {
+             serviceLog = await this.logsRepo.findByExpectedId(task.expectedId);
+        }
 
+        console.log(`[DEBUG] ServiceLog lookup result:`, serviceLog ? "Found" : "Null");
+        (task as any).serviceLog = serviceLog;
+        
+        return task;
+    }
+
+    // Check Schedules if not found
     // Check Schedules if not found
     const schedule = await this.schedulesRepo.findById(id);
     if (schedule) {
+        // Try to find if a service log exists for this schedule (even if status is pending/done)
+        // This is key for the "Done" view.
+        const serviceLog = await this.logsRepo.findByExpectedId(schedule.id);
+
         return {
             id: schedule.id,
             customerId: schedule.customerId,
@@ -85,7 +105,7 @@ export class TasksService {
             contractId: schedule.contractId || null,
             jobId: schedule.jobId,
             taskDate: schedule.expectedDate,
-            status: 'pending', // Schedules are pending execution
+            status: schedule.status, // Use actual status (e.g. 'done')
             taskType: 'service',
             description: schedule.notes || "Planned Service Schedule",
             createdAt: schedule.createdAt,
@@ -95,8 +115,9 @@ export class TasksService {
             productModel: schedule.productModel,
             address: schedule.address,
             technicianId: null,
-            source: 'schedule'
-        } as any; // Cast to match Task interface partially
+            source: 'schedule',
+            serviceLog: serviceLog // Attach log if found
+        } as any; 
     }
 
     return null;
@@ -157,10 +178,9 @@ export class TasksService {
     // Ideally the FE passes everything, but we can enrich if needed.
     const log = await this.logsRepo.create({
         ...logData,
-        expected_id: id, // Link back to the task/schedule if it makes sense logically (schema has expected_id)
-        // Note: Task might be manual, so expected_id might refer to a Task ID or Schedule ID. 
-        // If schema expects valid Schedule ID, and this is a manual Task, it might fail foreign key constraint if strict.
-        // However, 'expected_id' is nullable in DB schema we saw.
+        expected_id: (logData.expected_id && logData.expected_id !== "") ? logData.expected_id : null,
+        job_id: (logData.job_id && logData.job_id !== "") ? logData.job_id : null,
+        task_id: id // Link to Task ID
     });
 
     // 2. Update Task Status to 'completed'

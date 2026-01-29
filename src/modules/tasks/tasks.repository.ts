@@ -26,7 +26,8 @@ export class TasksRepository {
       jobName: row.jobs?.name,
       address: row.customer_products?.installation_location,
       productName: row.customer_products?.product_catalog?.name,
-      productModel: row.customer_products?.product_catalog?.model
+      productModel: row.customer_products?.product_catalog?.model,
+      contractId: row.schedule_expected?.contract_id
     };
   }
 
@@ -103,6 +104,7 @@ export class TasksRepository {
         customers ( id, profiles(name) ),
         technicians ( name ),
         jobs ( name ),
+        schedule_expected ( contract_id ),
         customer_products ( 
             installation_location,
             product_catalog ( name, model )

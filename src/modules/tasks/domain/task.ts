@@ -4,6 +4,7 @@ export interface Task {
   customerId?: string;
   customerProductId?: string;
   expectedId?: string; // Link to schedule
+  contractId?: string;
   technicianId?: string;
   jobId?: string; // New FK
   title: string;

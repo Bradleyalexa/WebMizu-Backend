@@ -1,6 +1,7 @@
 export interface ServiceLog {
   id: string;
   expectedId?: string | null;
+  taskId?: string | null;
   customerProductId: string;
   technicianId: string;
   serviceDate: string;
@@ -17,4 +18,5 @@ export interface ServiceLog {
   customerName?: string;
   productName?: string;
   installationLocation?: string;
+  customerAddress?: string;
 }
