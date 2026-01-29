@@ -25,7 +25,8 @@ export class ContractsRepository {
       id,
       expected_date,
       status,
-      source_type
+      source_type,
+      tasks ( id )
     )
   `;
 
@@ -173,7 +174,10 @@ export class ContractsRepository {
       customerId: row.customer_products?.customers?.id, 
       productName: `${row.customer_products?.product_catalog?.name || ''} ${row.customer_products?.product_catalog?.model || ''}`.trim(),
       installationLocation: row.customer_products?.installation_location,
-      schedules: row.schedule_expected || [],
+      schedules: (row.schedule_expected || []).map((s: any) => ({
+          ...s,
+          taskId: s.tasks?.[0]?.id // Map the first task ID if exists (assuming 1:1 or 1:N)
+      })),
       contractValue: row.price || 0,
     };
   }
