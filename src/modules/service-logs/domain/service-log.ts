@@ -17,6 +17,7 @@ export interface ServiceLog {
   technicianName?: string;
   customerName?: string;
   productName?: string;
+  productModel?: string;
   installationLocation?: string;
   customerAddress?: string;
 }

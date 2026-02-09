@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ErrorResponse } from "../../../packages/types/api/response";
+import { ErrorResponse } from "../../../../packages/types/api/response";
 
 export const errorHandler = (
   err: any,

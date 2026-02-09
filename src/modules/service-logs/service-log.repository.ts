@@ -3,7 +3,7 @@ import { ServiceLog } from "./domain/service-log";
 import { CreateServiceLogDTO } from "./dto/service-log.dto";
 
 export class ServiceLogRepository {
-  private table = "service_log";
+  private table: "service_log" = "service_log";
 
   private mapToDomain(row: any): ServiceLog {
     return {
@@ -99,9 +99,14 @@ export class ServiceLogRepository {
   }
 
   async create(data: CreateServiceLogDTO & { task_id?: string | null }): Promise<ServiceLog> {
+    const payload = {
+        ...data,
+        service_date: data.service_date instanceof Date ? data.service_date.toISOString() : data.service_date
+    };
+
     const { data: result, error } = await supabaseAdmin
       .from(this.table)
-      .insert(data)
+      .insert(payload)
       .select(`
         *,
         technicians ( name ),
@@ -171,9 +176,14 @@ export class ServiceLogRepository {
   }
 
   async update(id: string, data: Partial<CreateServiceLogDTO>): Promise<ServiceLog> {
+    const payload: any = { ...data };
+    if (data.service_date && data.service_date instanceof Date) {
+        payload.service_date = data.service_date.toISOString();
+    }
+
     const { data: result, error } = await supabaseAdmin
       .from(this.table)
-      .update(data)
+      .update(payload)
       .eq('id', id)
       .select(`
         *,

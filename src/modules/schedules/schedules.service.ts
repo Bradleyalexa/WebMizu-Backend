@@ -73,7 +73,7 @@ export class SchedulesService {
     if (!status || status === 'done' || status === 'completed') {
         const { data: tasks } = await this.tasksRepo.findAll({ limit: "1000", status: "completed", search: query.search });
         const serviceTasks = tasks; // Include all
-        const logs = await this.logsRepo.findAll(query.search);
+        const logs = await this.logsRepo.findAll({ search: query.search });
 
         unified = [
             ...unified,

@@ -56,7 +56,7 @@ export class ContractsRepository {
       .order("created_at", { ascending: false });
 
     if (query?.status && query.status !== 'all') {
-        queryBuilder = queryBuilder.eq('status', query.status);
+        queryBuilder = queryBuilder.eq('status', query.status as any);
     }
 
     const { data, error } = await queryBuilder;
