@@ -1,0 +1,6 @@
+Testing URL: https://gdfhhfcdomtpkelvmhui.supabase.co/storage/v1/object/public/customer-product/a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769450345128
+Fetching product with ID: 3a5ddada-3202-48f1-8086-08edfab2659a
+Product Found
+Original Photo URL: https://gdfhhfcdomtpkelvmhui.supabase.co/storage/v1/object/public/customer-product/a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769450345128
+Processed Photo URL: https://gdfhhfcdomtpkelvmhui.supabase.co/storage/v1/object/sign/customer-product/a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769450345128?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hZDcxZmVmNC1kYTg0LTRlNjQtYTJiOS1lNjM5ZWVmODFiMTUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjdXN0b21lci1wcm9kdWN0L2EzZWM4YmE3LTJmOTctNGM2MC04Nzk1LTNkYmZlOTc0M2VkOC1wcm9kdWN0LTE3Njk0NTAzNDUxMjgiLCJpYXQiOjE3NzA2NTM5ODksImV4cCI6MTc3MDY1NzU4OX0.r0l4XPNGif4ZWjD1g4zPA8chh1iFTIFKyBrmoEsAOUw
+SUCCESS: URL is signed!

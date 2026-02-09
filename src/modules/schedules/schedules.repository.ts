@@ -50,6 +50,7 @@ export class SchedulesRepository {
       `, { count: "exact" });
 
     if (status) queryBuilder = queryBuilder.eq("status", status);
+    if (query.customerProductId) queryBuilder = queryBuilder.eq("customer_product_id", query.customerProductId);
     if (startDate) queryBuilder = queryBuilder.gte("expected_date", startDate);
     if (endDate) queryBuilder = queryBuilder.lte("expected_date", endDate);
     if (query.search) {

@@ -31,7 +31,8 @@ export class ServiceLogRepository {
     };
   }
 
-  async findAll(search?: string): Promise<ServiceLog[]> {
+  async findAll(query: { search?: string, customerProductId?: string }): Promise<ServiceLog[]> {
+    const { search, customerProductId } = query;
     let queryBuilder = supabaseAdmin
       .from(this.table)
       .select(`
@@ -49,6 +50,10 @@ export class ServiceLogRepository {
         )
       `)
       .order("service_date", { ascending: false });
+
+    if (customerProductId) {
+        queryBuilder = queryBuilder.eq("customer_product_id", customerProductId);
+    }
 
     if (search) {
         // Robust search: Customer Name OR Job OR Notes

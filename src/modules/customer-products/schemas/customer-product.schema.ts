@@ -10,7 +10,7 @@ export const createCustomerProductSchema = z.object({
   quantity_owned: z.number().int().default(1),
   status: z.enum(['active', 'inactive', 'tradeIn']).default('active'),
   description: z.string().optional(),
-  photo_url: z.string().url().optional().or(z.literal('')),
+  photo_url: z.string().optional(),
   notes: z.string().optional(),
 });
 

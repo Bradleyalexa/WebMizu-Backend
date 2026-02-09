@@ -21,45 +21,84 @@ export class TasksService {
     const tasksResult = await this.repository.findAll({ ...query, limit: "500" });
     const tasks = tasksResult.data;
 
-    // 2. Fetch Planned Schedules (Contracts)
-    // We treat them as 'pending' tasks for the calendar view
-    const schedulesResult = await this.schedulesRepo.findAll({ ...query, limit: "500", status: 'pending' });
-    const schedules = schedulesResult.data;
+    // 2. Fetch Planned Schedules (contracts), typically 'pending'
+    const schedulesResult = await this.schedulesRepo.findAll({ ...query, limit: "500", status: query.status === 'completed' ? undefined : 'pending' });
+    // Note: If status is 'completed', we might not want pending schedules, but we'll filter below or let the repo handle it.
+    // Actually, schedulesRepo.findAll above forces status='pending' hardcoded in original code.
+    // Let's allow flexible status if query asks for it, but for "Service History" logic:
+    // User wants: Pending = Schedules + Tasks(pending). Completed = ServiceLog + Tasks(completed).
+    
+    // We keep original logic for pending schedules:
+    let schedules = schedulesResult.data;
+    if (query.status === 'completed' || query.status === 'done') {
+        schedules = []; // Schedules are inherently future/pending planning usually. 
+    }
 
-    // 3. Map Schedules to Task Domain
+    // 3. Fetch Service Logs (Completed History)
+    // Only if status is 'completed', 'done', or undefined (all)
+    let serviceLogs: any[] = [];
+    if (!query.status || query.status === 'completed' || query.status === 'done') {
+        const logs = await this.logsRepo.findAll({ 
+            search: query.search, 
+            customerProductId: query.customerProductId 
+        });
+        serviceLogs = logs.map(l => ({
+            id: l.id,
+            customerId: null, // ServiceLog doesn't directly expose customerId in domain but accessible via relations if needed
+            customerProductId: l.customerProductId,
+            contractId: null,
+            expectedId: l.expectedId,
+            jobId: null, // Log has job name/pekerjaan
+            taskDate: l.serviceDate,
+            status: 'completed',
+            taskType: 'service_log',
+            title: l.pekerjaan || "Service Log", 
+            description: l.notes,
+            createdAt: l.createdAt,
+            jobName: l.serviceType, // Using serviceType as job category
+            customerName: l.customerName,
+            productName: l.productName,
+            productModel: l.productModel,
+            address: l.installationLocation,
+            technicianName: l.technicianName,
+            technicianId: l.technicianId,
+            source: 'service_log',
+            taskId: l.taskId // Important for deduplication
+        }));
+    }
+
+    // 4. Map Schedules to Task Domain
     const mappedSchedules: any[] = schedules.map(s => ({
-        id: s.id, // Use schedule ID
+        id: s.id,
         customerProductId: s.customerProductId,
         contractId: s.contractId || null,
         jobId: s.jobId,
-        taskDate: s.expectedDate, // Map expectedDate to taskDate
-        status: 'pending', // Schedules are pending execution
-        taskType: 'service', // or 'planned'
+        taskDate: s.expectedDate,
+        status: s.status, 
+        taskType: 'service',
+        title: "Planned Service", 
         description: s.notes || "Planned Service Schedule",
         createdAt: s.createdAt,
         jobName: s.jobName,
         customerName: s.customerName,
         productName: s.productName,
         address: s.address,
-        technicianId: null, // Schedules don't have technician yet
-        source: 'schedule' // Flag to identify origin
+        technicianId: null,
+        source: 'schedule'
     }));
 
-    // 4. Merge and Sort
-    const unified = [...tasks, ...mappedSchedules];
+    // 5. Deduplicate Tasks that have a linked Service Log
+    // If a Service Log exists for a task, we show the Log instead of the Task (as it contains the completion details)
+    const logTaskIds = new Set(serviceLogs.map(l => l.taskId).filter(id => !!id));
+    const uniqueTasks = tasks.filter(t => !logTaskIds.has(t.id));
+
+    // 6. Merge and Sort
+    const unified = [...uniqueTasks, ...mappedSchedules, ...serviceLogs];
     unified.sort((a, b) => new Date(b.taskDate).getTime() - new Date(a.taskDate).getTime());
 
-    // 5. Return (respecting original total format or just array)
-    // TasksRepository returns { data, total }. We should probably match that.
-    
-    // Note: If the controller expects pagination, this unified list might be too big if we don't slice.
-    // However, for Calendar view, we usually want all.
-    // Let's slice if page/limit exists in query.
+    // 7. Return with pagination slice (in-memory)
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
-    
-    // If strict pagination is requested and limit is small (e.g. table view), we slice.
-    // If limit is large (e.g. 100 from TasksPage), we likely return all up to 100/1000.
     
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;

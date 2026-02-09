@@ -74,24 +74,37 @@ export class CustomerProductRepository {
   private async signPhotoUrl(pathOrUrl: string | null): Promise<string | null> {
     if (!pathOrUrl) return null;
     
-    // If it's already a full URL (http/https), assume it's legacy public or external
-    if (pathOrUrl.startsWith('http')) return pathOrUrl;
+    let path = pathOrUrl;
 
-    // Otherwise, assume it's a path in the 'customer-product' bucket
+    // Check if it's a Supabase public URL for our bucket and extract the path
+    // Example: https://[project].supabase.co/storage/v1/object/public/customer-product/[path]
+    if (pathOrUrl.startsWith('http')) {
+      if (pathOrUrl.includes('/customer-product/')) {
+        const parts = pathOrUrl.split('/customer-product/');
+        if (parts.length > 1 && parts[1]) {
+          path = parts[1]; // Use the extracted path to sign
+        } else {
+            return pathOrUrl; // Return original if parsing fails
+        }
+      } else {
+        return pathOrUrl; // External URL or valid public URL
+      }
+    }
+
     try {
       const { data, error } = await supabaseAdmin
         .storage
         .from('customer-product')
-        .createSignedUrl(pathOrUrl, 3600); // 1 hour expiry
+        .createSignedUrl(path, 3600); // 1 hour expiry
 
       if (error || !data) {
-        console.warn(`Failed to sign URL for path ${pathOrUrl}:`, error);
+        console.warn(`Failed to sign URL for path ${path}:`, error);
         return pathOrUrl; // Fallback to raw path if signing fails
       }
       
       return data.signedUrl;
     } catch (e) {
-      console.warn(`Exception signing URL for path ${pathOrUrl}:`, e);
+      console.warn(`Exception signing URL for path ${path}:`, e);
       return pathOrUrl;
     }
   }
