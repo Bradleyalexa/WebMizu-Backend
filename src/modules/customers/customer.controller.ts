@@ -30,7 +30,7 @@ export class CustomerController {
 
   getOne = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       const customer = await this.customerService.findById(id);
       res.json({ success: true, data: customer });
@@ -52,7 +52,7 @@ export class CustomerController {
 
   update = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       const payload = updateCustomerSchema.parse(req.body);
       const customer = await this.customerService.update(id, payload);
@@ -64,7 +64,7 @@ export class CustomerController {
 
   delete = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       await this.customerService.delete(id);
       res.json({ success: true, message: "Customer deactivated successfully" });

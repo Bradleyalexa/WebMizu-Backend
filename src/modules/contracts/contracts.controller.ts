@@ -64,7 +64,7 @@ export class ContractsController {
 
   findOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       const result = await this.service.findOne(id);
 
@@ -89,7 +89,7 @@ export class ContractsController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       const body = updateContractSchema.parse(req.body);
 
@@ -109,7 +109,7 @@ export class ContractsController {
 
   remove = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
       await this.service.remove(id);
 

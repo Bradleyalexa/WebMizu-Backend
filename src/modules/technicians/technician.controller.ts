@@ -55,7 +55,7 @@ export class TechnicianController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const body = updateTechnicianSchema.parse(req.body);
 
       const technician = await this.service.updateTechnician(id!, body);
@@ -74,7 +74,7 @@ export class TechnicianController {
 
   getOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const technician = await this.service.getTechnicianById(id!);
 
       const response: SuccessResponse<TechnicianResponseDTO> = {

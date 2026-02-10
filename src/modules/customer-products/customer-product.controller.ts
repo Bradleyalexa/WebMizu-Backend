@@ -33,7 +33,7 @@ export class CustomerProductController {
 
   getByCustomer = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { customerId } = req.params;
+      const customerId = req.params.customerId as string;
       if (!customerId) throw new Error("Customer ID is required");
 
       const result = await this.service.getCustomerProducts(customerId);
@@ -52,7 +52,7 @@ export class CustomerProductController {
 
   getOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
 
       const result = await this.service.getCustomerProductById(id);
@@ -71,7 +71,7 @@ export class CustomerProductController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) throw new Error("ID is required");
 
       const body = updateCustomerProductSchema.parse(req.body);

@@ -28,7 +28,7 @@ export class TasksController {
 
   getOne = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) return res.status(400).json({ error: "ID is required" });
       const task = await this.service.findById(id);
       if (!task) return res.status(404).json({ error: "Task not found" });
@@ -50,7 +50,7 @@ export class TasksController {
 
   update = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) return res.status(400).json({ error: "ID is required" });
       const payload = updateTaskSchema.parse(req.body);
       const task = await this.service.update(id, payload);
@@ -62,7 +62,7 @@ export class TasksController {
 
   delete = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) return res.status(400).json({ error: "ID is required" });
       await this.service.delete(id);
       res.status(204).send();
@@ -72,7 +72,7 @@ export class TasksController {
   };
   complete = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) return res.status(400).json({ error: "ID is required" });
 
       // We validate body against Service Log schema, NOT Task schema

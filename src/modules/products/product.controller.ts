@@ -24,7 +24,7 @@ router.get("/", authGuard, async (req: Request, res: Response, next: NextFunctio
 
 router.get("/:id", authGuard, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = req.params["id"];
+    const id = req.params["id"] as string;
     if (!id) throw new Error("ID is required");
     const result = await service.findOne(id);
     res.json({ success: true, data: result });
@@ -54,7 +54,7 @@ router.put(
   roleGuard("admin"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"];
+      const id = req.params["id"] as string;
       if (!id) throw new Error("ID is required");
       const payload = updateProductSchema.parse(req.body);
       const result = await service.update(id, payload);
@@ -71,7 +71,7 @@ router.delete(
   roleGuard("admin"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"];
+      const id = req.params["id"] as string;
       if (!id) throw new Error("ID is required");
       await service.delete(id);
       res.json({ success: true, message: "Product deleted" });

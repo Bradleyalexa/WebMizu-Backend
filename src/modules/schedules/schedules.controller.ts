@@ -52,7 +52,7 @@ export class SchedulesController {
 
   findOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"];
+      const id = req.params["id"] as string;
       if (!id) throw new Error("ID is required");
 
       const schedule = await this.service.findOne(id);
@@ -69,7 +69,7 @@ export class SchedulesController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"];
+      const id = req.params["id"] as string;
       if (!id) throw new Error("ID is required");
 
       const payload = updateScheduleSchema.parse(req.body);
@@ -87,7 +87,7 @@ export class SchedulesController {
 
   remove = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"];
+      const id = req.params["id"] as string;
       if (!id) throw new Error("ID is required");
 
       await this.service.remove(id);

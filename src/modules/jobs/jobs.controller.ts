@@ -46,7 +46,7 @@ export class JobsController {
 
   findOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"]; // Fix index signature
+      const id = req.params["id"] as string; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       const job = await this.service.findOne(id);
@@ -63,7 +63,7 @@ export class JobsController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"]; // Fix index signature
+      const id = req.params["id"] as string; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       const payload = updateJobSchema.parse(req.body);
@@ -81,7 +81,7 @@ export class JobsController {
 
   remove = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params["id"]; // Fix index signature
+      const id = req.params["id"] as string; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       await this.service.remove(id);
