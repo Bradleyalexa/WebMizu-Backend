@@ -28,7 +28,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
-# Expose port (default 3001 as per config)
-EXPOSE 3001
+# Expose port (default 3000 as per config)
+EXPOSE 3000
 
 CMD ["npm", "run", "start"]
