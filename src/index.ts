@@ -19,6 +19,15 @@ app.use(
 // Body Parsing
 app.use(express.json());
 
+// Health Check & Root Route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to WebMizu Backend", service: "backend", status: "active" });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ success: true, status: "ok", timestamp: new Date().toISOString() });
+});
+
 // API Routes
 app.use("/api/v1", routes);
 
