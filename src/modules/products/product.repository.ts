@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "../../db/supabase";
-import { Database } from "../../../../../packages/types/supabase";
+import { Database } from "@packages/types/supabase";
 import { Product } from "./domain/product";
 import { CreateProductDTO, UpdateProductDTO } from "./dto/product.dto";
 
@@ -91,7 +91,7 @@ export class ProductRepository {
     const updateData: any = { ...payload };
     if (payload.imageUrl !== undefined) updateData.image_url = payload.imageUrl;
     if (payload.categoryId !== undefined) updateData.category_id = payload.categoryId;
-    
+
     // Clean up DTO keys that don't match DB
     delete updateData.imageUrl;
     delete updateData.categoryId;
@@ -108,10 +108,7 @@ export class ProductRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from("product_catalog")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabaseAdmin.from("product_catalog").delete().eq("id", id);
 
     if (error) throw error;
   }

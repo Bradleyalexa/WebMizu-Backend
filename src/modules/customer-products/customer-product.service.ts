@@ -1,5 +1,9 @@
 import { CustomerProductRepository } from "./customer-product.repository";
-import { CreateCustomerProductDTO, CustomerProductResponseDTO, UpdateCustomerProductDTO } from "./dto/customer-product.dto";
+import {
+  CreateCustomerProductDTO,
+  CustomerProductResponseDTO,
+  UpdateCustomerProductDTO,
+} from "./dto/customer-product.dto";
 import { CustomerProduct } from "./domain/customer-product";
 
 export class CustomerProductService {
@@ -42,13 +46,18 @@ export class CustomerProductService {
     return this.toDTO(item);
   }
 
-  async updateCustomerProduct(id: string, dto: UpdateCustomerProductDTO): Promise<CustomerProductResponseDTO> {
+  async updateCustomerProduct(
+    id: string,
+    dto: UpdateCustomerProductDTO,
+  ): Promise<CustomerProductResponseDTO> {
     // Filter undefined fields
     const dbData: any = {};
     if (dto.product_catalog_id !== undefined) dbData.product_catalog_id = dto.product_catalog_id;
-    if (dto.installation_technician_id !== undefined) dbData.installation_technician_id = dto.installation_technician_id;
+    if (dto.installation_technician_id !== undefined)
+      dbData.installation_technician_id = dto.installation_technician_id;
     if (dto.installation_date !== undefined) dbData.installation_date = dto.installation_date;
-    if (dto.installation_location !== undefined) dbData.installation_location = dto.installation_location;
+    if (dto.installation_location !== undefined)
+      dbData.installation_location = dto.installation_location;
     if (dto.cust_product_price !== undefined) dbData.cust_product_price = dto.cust_product_price;
     if (dto.quantity_owned !== undefined) dbData.quantity_owned = dto.quantity_owned;
     if (dto.status !== undefined) dbData.status = dto.status;
@@ -76,12 +85,12 @@ export class CustomerProductService {
       photo_url: domain.photoUrl,
       notes: domain.notes,
       created_at: domain.createdAt,
-      
+
       // Enriched
       product_name: domain.productName,
       product_model: domain.productModel,
       technician_name: domain.technicianName,
-      contract_status: domain.contractStatus || 'Unknown',
+      contract_status: domain.contractStatus || "Unknown",
     };
   }
 }

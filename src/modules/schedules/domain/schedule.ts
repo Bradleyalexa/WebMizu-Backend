@@ -5,10 +5,10 @@ export interface Schedule {
   contractId?: string;
   jobId?: string;
   expectedDate: string;
-  status: 'pending' | 'scheduled' | 'done' | 'cancelled';
+  status: "pending" | "scheduled" | "done" | "cancelled";
   notes?: string;
   createdAt: string;
-  
+
   // Relations
   jobName?: string;
   customerName?: string;

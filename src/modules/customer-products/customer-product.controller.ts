@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { CustomerProductService } from "./customer-product.service";
-import { createCustomerProductSchema, updateCustomerProductSchema } from "./schemas/customer-product.schema";
-import { SuccessResponse } from "../../../../../packages/types/api/response";
+import {
+  createCustomerProductSchema,
+  updateCustomerProductSchema,
+} from "./schemas/customer-product.schema";
+import { SuccessResponse } from "@packages/types/api/response";
 import { CustomerProductResponseDTO } from "./dto/customer-product.dto";
 
 export class CustomerProductController {
@@ -32,7 +35,7 @@ export class CustomerProductController {
     try {
       const { customerId } = req.params;
       if (!customerId) throw new Error("Customer ID is required");
-      
+
       const result = await this.service.getCustomerProducts(customerId);
 
       const response: SuccessResponse<CustomerProductResponseDTO[]> = {

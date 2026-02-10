@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
 import { CustomerService } from "./customer.service";
-import { createCustomerSchema, updateCustomerSchema, customerQuerySchema } from "./schemas/customer.schema";
+import {
+  createCustomerSchema,
+  updateCustomerSchema,
+  customerQuerySchema,
+} from "./schemas/customer.schema";
 
 export class CustomerController {
   private customerService = new CustomerService();
-
 
   list = async (req: Request, res: Response) => {
     try {

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { JobsService } from "./jobs.service";
 import { createJobSchema, updateJobSchema, jobQuerySchema } from "./schemas/job.schema";
 // Assuming referencing same path as contracts controller
-import { SuccessResponse } from "../../../../../packages/types/api/response";
+import { SuccessResponse } from "@packages/types/api/response";
 
 export class JobsController {
   private service: JobsService;
@@ -15,11 +15,11 @@ export class JobsController {
     try {
       const payload = createJobSchema.parse(req.body);
       const job = await this.service.create(payload);
-      
+
       const response: SuccessResponse<typeof job> = {
         success: true,
         data: job,
-        error: null
+        error: null,
       };
       res.status(201).json(response);
     } catch (err) {
@@ -31,11 +31,11 @@ export class JobsController {
     try {
       const query = jobQuerySchema.parse(req.query);
       const { data, total } = await this.service.findAll(query);
-      
+
       const response: SuccessResponse<typeof data> = {
         success: true,
         data,
-        error: null
+        error: null,
         // meta is apparently not in SuccessResponse?
       };
       res.json(response);
@@ -46,7 +46,7 @@ export class JobsController {
 
   findOne = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params['id']; // Fix index signature
+      const id = req.params["id"]; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       const job = await this.service.findOne(id);
@@ -63,7 +63,7 @@ export class JobsController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params['id']; // Fix index signature
+      const id = req.params["id"]; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       const payload = updateJobSchema.parse(req.body);
@@ -81,7 +81,7 @@ export class JobsController {
 
   remove = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params['id']; // Fix index signature
+      const id = req.params["id"]; // Fix index signature
       if (!id) throw new Error("ID is required");
 
       await this.service.remove(id);

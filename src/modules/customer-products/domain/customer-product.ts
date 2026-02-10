@@ -4,7 +4,7 @@ export interface CustomerProduct {
   productCatalogId: string;
   orderProductId?: string | null;
   installationTechnicianId?: string | null;
-  status: 'active' | 'inactive' | 'tradeIn';
+  status: "active" | "inactive" | "tradeIn";
   quantityOwned: number;
   custProductPrice?: number | null;
   installationDate?: string | null; // ISO Date string
@@ -13,7 +13,7 @@ export interface CustomerProduct {
   photoUrl?: string | null;
   notes?: string | null;
   createdAt: string;
-  
+
   // Joined fields
   productName?: string;
   productModel?: string;

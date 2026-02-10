@@ -22,9 +22,7 @@ export class JobsRepository {
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
 
-    let queryBuilder = supabaseAdmin
-      .from(this.table)
-      .select("*", { count: "exact" });
+    let queryBuilder = supabaseAdmin.from(this.table).select("*", { count: "exact" });
 
     if (search) {
       queryBuilder = queryBuilder.ilike("name", `%${search}%`);
@@ -43,11 +41,7 @@ export class JobsRepository {
   }
 
   async findById(id: string): Promise<Job | null> {
-    const { data, error } = await supabaseAdmin
-      .from(this.table)
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabaseAdmin.from(this.table).select("*").eq("id", id).single();
 
     if (error) return null;
     return this.mapToDomain(data);
@@ -84,11 +78,8 @@ export class JobsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from(this.table)
-      .delete()
-      .eq("id", id);
-      
+    const { error } = await supabaseAdmin.from(this.table).delete().eq("id", id);
+
     if (error) throw error;
   }
 }

@@ -6,7 +6,7 @@ export interface Contract {
   intervalMonths: number;
   totalService: number;
   servicesUsed: number;
-  status: 'active' | 'expired';
+  status: "active" | "expired";
   contractUrl: string | null;
   notes: string | null;
   createdAt: string;
@@ -18,9 +18,9 @@ export interface Contract {
   productName?: string;
   installationLocation?: string;
   schedules?: {
-      id: string;
-      expected_date: string;
-      status: string;
-      source_type: string;
+    id: string;
+    expected_date: string;
+    status: string;
+    source_type: string;
   }[];
 }

@@ -27,7 +27,7 @@ export class TasksRepository {
       address: row.customer_products?.installation_location,
       productName: row.customer_products?.product_catalog?.name,
       productModel: row.customer_products?.product_catalog?.model,
-      contractId: row.schedule_expected?.contract_id
+      contractId: row.schedule_expected?.contract_id,
     };
   }
 
@@ -38,9 +38,8 @@ export class TasksRepository {
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
 
-    let queryBuilder = supabaseAdmin
-      .from(this.table)
-      .select(`
+    let queryBuilder = supabaseAdmin.from(this.table).select(
+      `
         *,
         customers ( id, profiles(name) ),
         technicians ( name ),
@@ -49,39 +48,44 @@ export class TasksRepository {
             installation_location,
             product_catalog ( name, model )
         )
-      `, { count: "exact" });
+      `,
+      { count: "exact" },
+    );
 
     if (status) queryBuilder = queryBuilder.eq("status", status);
     if (technicianId) queryBuilder = queryBuilder.eq("technician_id", technicianId);
-    if (query.customerProductId) queryBuilder = queryBuilder.eq("customer_product_id", query.customerProductId);
+    if (query.customerProductId)
+      queryBuilder = queryBuilder.eq("customer_product_id", query.customerProductId);
     if (date) {
-        // Simple date equality check might be tricky with timestamptz, usually range is better
-        // For now, assuming exact match or partial match logic if needed
-        // queryBuilder = queryBuilder.eq("task_date", date); 
-        // Better: check if it falls within that day
-        queryBuilder = queryBuilder.gte("task_date", `${date}T00:00:00`).lte("task_date", `${date}T23:59:59`);
+      // Simple date equality check might be tricky with timestamptz, usually range is better
+      // For now, assuming exact match or partial match logic if needed
+      // queryBuilder = queryBuilder.eq("task_date", date);
+      // Better: check if it falls within that day
+      queryBuilder = queryBuilder
+        .gte("task_date", `${date}T00:00:00`)
+        .lte("task_date", `${date}T23:59:59`);
     }
-    
-    if (search) {
-        // Robust search: Customer Name OR Title OR Description
-        console.log("Searching Tasks for:", search);
-        
-        // 1. Find matching Customer IDs via Profiles
-        const { data: matchingProfiles, error: profileError } = await supabaseAdmin
-             .from('profiles')
-             .select('id')
-             .ilike('name', `%${search}%`);
-        
-        if (profileError) console.error("Task Search Profile Error:", profileError);
-        const customerIds = matchingProfiles ? matchingProfiles.map((p: any) => p.id) : [];
-        const customerIdsString = customerIds.join(',');
 
-        let orQuery = `title.ilike.%${search}%,description.ilike.%${search}%`;
-        if (customerIds.length > 0) {
-            orQuery += `,customer_id.in.(${customerIdsString})`;
-        }
-        
-        queryBuilder = queryBuilder.or(orQuery);
+    if (search) {
+      // Robust search: Customer Name OR Title OR Description
+      console.log("Searching Tasks for:", search);
+
+      // 1. Find matching Customer IDs via Profiles
+      const { data: matchingProfiles, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .ilike("name", `%${search}%`);
+
+      if (profileError) console.error("Task Search Profile Error:", profileError);
+      const customerIds = matchingProfiles ? matchingProfiles.map((p: any) => p.id) : [];
+      const customerIdsString = customerIds.join(",");
+
+      let orQuery = `title.ilike.%${search}%,description.ilike.%${search}%`;
+      if (customerIds.length > 0) {
+        orQuery += `,customer_id.in.(${customerIdsString})`;
+      }
+
+      queryBuilder = queryBuilder.or(orQuery);
     }
 
     const { data, count, error } = await queryBuilder
@@ -99,7 +103,8 @@ export class TasksRepository {
   async findById(id: string): Promise<Task | null> {
     const { data, error } = await supabaseAdmin
       .from(this.table)
-      .select(`
+      .select(
+        `
         *,
         customers ( id, profiles(name) ),
         technicians ( name ),
@@ -109,7 +114,8 @@ export class TasksRepository {
             installation_location,
             product_catalog ( name, model )
         )
-      `)
+      `,
+      )
       .eq("id", id)
       .single();
 
@@ -128,10 +134,12 @@ export class TasksRepository {
     }
 
     const { count, error } = await query;
-    
+
     if (error) throw error;
     if (count && count > 0) {
-      throw new Error(`A task with the exact time ${taskDate} already exists. Please choose a different time.`);
+      throw new Error(
+        `A task with the exact time ${taskDate} already exists. Please choose a different time.`,
+      );
     }
   }
 
@@ -141,13 +149,15 @@ export class TasksRepository {
     const { data, error } = await supabaseAdmin
       .from(this.table)
       .insert(payload)
-      .select(`
+      .select(
+        `
         *,
         customers ( id, profiles(name) ),
         technicians ( name ),
         jobs ( name ),
         customer_products ( installation_location )
-       `)
+       `,
+      )
       .single();
 
     if (error) throw error;
@@ -156,20 +166,22 @@ export class TasksRepository {
 
   async update(id: string, payload: UpdateTaskDTO): Promise<Task> {
     if (payload.task_date) {
-        await this.checkUniqueness(payload.task_date, id);
+      await this.checkUniqueness(payload.task_date, id);
     }
 
     const { data, error } = await supabaseAdmin
       .from(this.table)
       .update(payload)
       .eq("id", id)
-      .select(`
+      .select(
+        `
         *,
         customers ( id, profiles(name) ),
         technicians ( name ),
         jobs ( name ),
         customer_products ( installation_location )
-       `)
+       `,
+      )
       .single();
 
     if (error) throw error;
@@ -177,11 +189,8 @@ export class TasksRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from(this.table)
-      .delete()
-      .eq("id", id);
-      
+    const { error } = await supabaseAdmin.from(this.table).delete().eq("id", id);
+
     if (error) throw error;
   }
 }

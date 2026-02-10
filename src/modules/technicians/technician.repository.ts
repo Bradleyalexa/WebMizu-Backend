@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "../../db/supabase";
-import { Database } from "../../../../../packages/types/supabase";
+import { Database } from "@packages/types/supabase";
 import { Technician } from "./domain/technician";
 import { CreateTechnicianDTO, UpdateTechnicianDTO } from "./dto/technician.dto";
 

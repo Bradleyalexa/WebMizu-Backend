@@ -1,7 +1,7 @@
-import { Database } from "../../../../../../packages/types/supabase";
+import { Database } from "@packages/types/supabase";
 
-type CustomerStatus = Database['public']['Enums']['customer_status'];
-type AddressType = Database['public']['Enums']['address_type'];
+type CustomerStatus = Database["public"]["Enums"]["customer_status"];
+type AddressType = Database["public"]["Enums"]["address_type"];
 
 export interface Customer {
   id: string;

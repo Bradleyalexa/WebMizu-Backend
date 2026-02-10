@@ -10,7 +10,7 @@ export class ProfileService {
 
   async getProfile(id: string): Promise<Profile> {
     const profile = await this.repo.findById(id);
-    
+
     if (!profile) {
       // Logic: Profile must exist if auth passed, but if missing in table, it's a data consistency issue
       throw new Error(`Profile not found for ID ${id}`);

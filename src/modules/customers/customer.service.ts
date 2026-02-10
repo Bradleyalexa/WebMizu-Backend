@@ -5,7 +5,6 @@ import { Customer } from "./domain/customer";
 export class CustomerService {
   private customerRepository = new CustomerRepository();
 
-
   async findAll(query: CustomerQueryDTO): Promise<{ data: Customer[]; total: number }> {
     return this.customerRepository.findAll(query);
   }

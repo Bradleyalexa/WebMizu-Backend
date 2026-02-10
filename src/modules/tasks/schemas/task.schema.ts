@@ -6,7 +6,7 @@ export const createTaskSchema = z.object({
   customer_product_id: z.string().uuid().optional(),
   expected_id: z.string().uuid().optional(),
   technician_id: z.string().uuid().optional(),
-  job_id: z.string().uuid({ message: "Job is required" }), 
+  job_id: z.string().uuid({ message: "Job is required" }),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   task_type: z.enum(["general", "service"]).optional().default("general"),

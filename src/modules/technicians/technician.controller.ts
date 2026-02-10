@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { TechnicianService } from "./technician.service";
 import { TechnicianResponseDTO } from "./dto/technician.dto";
 import { createTechnicianSchema, updateTechnicianSchema } from "./schemas/technician.schema";
-import { SuccessResponse } from "../../../../../packages/types/api/response";
+import { SuccessResponse } from "@packages/types/api/response";
 import { z } from "zod";
 
 export class TechnicianController {
@@ -27,7 +27,7 @@ export class TechnicianController {
           items: result.items.map(this.toDTO),
           total: result.total,
           page,
-          limit
+          limit,
         },
         error: null,
       });
@@ -40,11 +40,11 @@ export class TechnicianController {
     try {
       const body = createTechnicianSchema.parse(req.body);
       const technician = await this.service.createTechnician(body);
-      
+
       const response: SuccessResponse<TechnicianResponseDTO> = {
         success: true,
         data: this.toDTO(technician),
-        error: null
+        error: null,
       };
 
       res.status(201).json(response);
@@ -63,7 +63,7 @@ export class TechnicianController {
       const response: SuccessResponse<TechnicianResponseDTO> = {
         success: true,
         data: this.toDTO(technician),
-        error: null
+        error: null,
       };
 
       res.json(response);
@@ -80,7 +80,7 @@ export class TechnicianController {
       const response: SuccessResponse<TechnicianResponseDTO> = {
         success: true,
         data: this.toDTO(technician),
-        error: null
+        error: null,
       };
 
       res.json(response);
@@ -96,7 +96,7 @@ export class TechnicianController {
       phone: tech.phone,
       photo_url: tech.photoUrl, // map Domain camelCase to DTO snake_case
       notes: tech.notes,
-      created_at: tech.createdAt
+      created_at: tech.createdAt,
     };
   }
 }

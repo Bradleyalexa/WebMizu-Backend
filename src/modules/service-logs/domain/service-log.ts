@@ -5,7 +5,7 @@ export interface ServiceLog {
   customerProductId: string;
   technicianId: string;
   serviceDate: string;
-  serviceType: 'contract' | 'perpanggil';
+  serviceType: "contract" | "perpanggil";
   pekerjaan: string;
   hargaService: number;
   teknisiFee?: number | null;

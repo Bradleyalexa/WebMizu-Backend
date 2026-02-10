@@ -1,12 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { ErrorResponse } from "../../../../packages/types/api/response";
+import { ErrorResponse } from "@packages/types/api/response";
 
-export const errorHandler = (
-  err: any,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err); // Always log to console/stdout
 
   const response: ErrorResponse = {
@@ -20,6 +15,6 @@ export const errorHandler = (
   };
 
   const status = err.status || 500;
-  
+
   res.status(status).json(response);
 };

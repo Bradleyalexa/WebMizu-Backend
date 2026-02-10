@@ -74,17 +74,17 @@ export class TasksController {
     try {
       const { id } = req.params;
       if (!id) return res.status(400).json({ error: "ID is required" });
-      
+
       // We validate body against Service Log schema, NOT Task schema
       // We need to import createServiceLogSchema
       const { createServiceLogSchema } = require("../service-logs/schemas/service-log.schema");
       const payload = createServiceLogSchema.parse(req.body);
-      
+
       const result = await this.service.completeTask(id, payload);
       res.status(201).json({ data: result });
     } catch (error: any) {
-        console.error("Complete Task Error:", error);
-        res.status(400).json({ error: error.message });
+      console.error("Complete Task Error:", error);
+      res.status(400).json({ error: error.message });
     }
   };
 }

@@ -6,7 +6,7 @@ export interface CreateCustomerProductDTO {
   installation_location?: string;
   cust_product_price?: number;
   quantity_owned?: number;
-  status?: 'active' | 'inactive' | 'tradeIn';
+  status?: "active" | "inactive" | "tradeIn";
   description?: string;
   photo_url?: string;
   notes?: string;

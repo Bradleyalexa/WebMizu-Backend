@@ -23,19 +23,23 @@ export class ServiceLogRepository {
 
       // Relations
       technicianName: row.technicians?.name || "Unknown",
-      customerName: row.customer_products?.customers?.profiles?.name || row.customer_products?.customers?.name || "Unknown",
+      customerName:
+        row.customer_products?.customers?.profiles?.name ||
+        row.customer_products?.customers?.name ||
+        "Unknown",
       productName: row.customer_products?.product_catalog?.name || "Unknown Product",
       productModel: row.customer_products?.product_catalog?.model,
       installationLocation: row.customer_products?.installation_location,
-      customerAddress: row.customer_products?.customers?.address // Map address
+      customerAddress: row.customer_products?.customers?.address, // Map address
     };
   }
 
-  async findAll(query: { search?: string, customerProductId?: string }): Promise<ServiceLog[]> {
+  async findAll(query: { search?: string; customerProductId?: string }): Promise<ServiceLog[]> {
     const { search, customerProductId } = query;
     let queryBuilder = supabaseAdmin
       .from(this.table)
-      .select(`
+      .select(
+        `
         *,
         technicians ( name ),
         customer_products!inner (
@@ -48,48 +52,49 @@ export class ServiceLogRepository {
             profiles ( name )
           )
         )
-      `)
+      `,
+      )
       .order("service_date", { ascending: false });
 
     if (customerProductId) {
-        queryBuilder = queryBuilder.eq("customer_product_id", customerProductId);
+      queryBuilder = queryBuilder.eq("customer_product_id", customerProductId);
     }
 
     if (search) {
-        // Robust search: Customer Name OR Job OR Notes
-        // 1. Find matching matching Customer IDs via Profiles
-        const { data: matchingProfiles, error: profileError } = await supabaseAdmin
-             .from('profiles')
-             .select('id')
-             .ilike('name', `%${search}%`);
-        
-        let customerIds: string[] = [];
-        if (!profileError && matchingProfiles) {
-             customerIds = matchingProfiles.map((p: any) => p.id);
-        }
+      // Robust search: Customer Name OR Job OR Notes
+      // 1. Find matching matching Customer IDs via Profiles
+      const { data: matchingProfiles, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .ilike("name", `%${search}%`);
 
-        // 2. Find matching Product IDs for these customers (Service Log links to CustomerProduct, not Customer directly)
-        let customerProductIds: string[] = [];
-        if (customerIds.length > 0) {
-             const { data: matchingProducts, error: productError } = await supabaseAdmin
-                 .from('customer_products')
-                 .select('id')
-                 .in('customer_id', customerIds);
-             
-             if (!productError && matchingProducts) {
-                 customerProductIds = matchingProducts.map((p: any) => p.id);
-             }
+      let customerIds: string[] = [];
+      if (!profileError && matchingProfiles) {
+        customerIds = matchingProfiles.map((p: any) => p.id);
+      }
+
+      // 2. Find matching Product IDs for these customers (Service Log links to CustomerProduct, not Customer directly)
+      let customerProductIds: string[] = [];
+      if (customerIds.length > 0) {
+        const { data: matchingProducts, error: productError } = await supabaseAdmin
+          .from("customer_products")
+          .select("id")
+          .in("customer_id", customerIds);
+
+        if (!productError && matchingProducts) {
+          customerProductIds = matchingProducts.map((p: any) => p.id);
         }
-        
-        // 3. Construct Query
-        let orQuery = `pekerjaan.ilike.%${search}%,notes.ilike.%${search}%`;
-        if (customerProductIds.length > 0) {
-            const idsString = customerProductIds.join(',');
-            // customer_product_id is the FK in service_log
-            orQuery += `,customer_product_id.in.(${idsString})`;
-        }
-        
-        queryBuilder = queryBuilder.or(orQuery);
+      }
+
+      // 3. Construct Query
+      let orQuery = `pekerjaan.ilike.%${search}%,notes.ilike.%${search}%`;
+      if (customerProductIds.length > 0) {
+        const idsString = customerProductIds.join(",");
+        // customer_product_id is the FK in service_log
+        orQuery += `,customer_product_id.in.(${idsString})`;
+      }
+
+      queryBuilder = queryBuilder.or(orQuery);
     }
 
     const { data, error } = await queryBuilder;
@@ -100,14 +105,16 @@ export class ServiceLogRepository {
 
   async create(data: CreateServiceLogDTO & { task_id?: string | null }): Promise<ServiceLog> {
     const payload = {
-        ...data,
-        service_date: data.service_date instanceof Date ? data.service_date.toISOString() : data.service_date
+      ...data,
+      service_date:
+        data.service_date instanceof Date ? data.service_date.toISOString() : data.service_date,
     };
 
     const { data: result, error } = await supabaseAdmin
       .from(this.table)
       .insert(payload)
-      .select(`
+      .select(
+        `
         *,
         technicians ( name ),
         customer_products (
@@ -120,7 +127,8 @@ export class ServiceLogRepository {
             profiles ( name )
           )
         )
-      `)
+      `,
+      )
       .single();
 
     if (error) throw error;
@@ -130,7 +138,8 @@ export class ServiceLogRepository {
   async findByExpectedId(expectedId: string): Promise<ServiceLog | null> {
     const { data, error } = await supabaseAdmin
       .from(this.table)
-      .select(`
+      .select(
+        `
         *,
         technicians ( name ),
         customer_products (
@@ -143,7 +152,8 @@ export class ServiceLogRepository {
             profiles ( name )
           )
         )
-      `)
+      `,
+      )
       .eq("expected_id", expectedId)
       .single();
 
@@ -154,7 +164,8 @@ export class ServiceLogRepository {
   async findByTaskId(taskId: string): Promise<ServiceLog | null> {
     const { data, error } = await supabaseAdmin
       .from(this.table)
-      .select(`
+      .select(
+        `
         *,
         technicians ( name ),
         customer_products (
@@ -167,7 +178,8 @@ export class ServiceLogRepository {
             profiles ( name )
           )
         )
-      `)
+      `,
+      )
       .eq("task_id", taskId)
       .single();
 
@@ -178,14 +190,15 @@ export class ServiceLogRepository {
   async update(id: string, data: Partial<CreateServiceLogDTO>): Promise<ServiceLog> {
     const payload: any = { ...data };
     if (data.service_date && data.service_date instanceof Date) {
-        payload.service_date = data.service_date.toISOString();
+      payload.service_date = data.service_date.toISOString();
     }
 
     const { data: result, error } = await supabaseAdmin
       .from(this.table)
       .update(payload)
-      .eq('id', id)
-      .select(`
+      .eq("id", id)
+      .select(
+        `
         *,
         technicians ( name ),
         customer_products (
@@ -198,7 +211,8 @@ export class ServiceLogRepository {
             profiles ( name )
           )
         )
-      `)
+      `,
+      )
       .single();
 
     if (error) throw error;

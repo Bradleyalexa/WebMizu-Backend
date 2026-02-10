@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ProfileService } from "./profile.service";
-import { SuccessResponse } from "../../../../../packages/types/api/response";
+import { SuccessResponse } from "@packages/types/api/response";
 import { ProfileResponseDTO } from "./dto/profile.response.dto";
 
 export class ProfileController {

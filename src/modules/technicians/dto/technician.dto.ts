@@ -5,7 +5,6 @@ import { createTechnicianSchema, updateTechnicianSchema } from "../schemas/techn
 export type CreateTechnicianDTO = z.infer<typeof createTechnicianSchema>;
 export type UpdateTechnicianDTO = z.infer<typeof updateTechnicianSchema>;
 
-
 // Response DTO
 export interface TechnicianResponseDTO {
   id: string;

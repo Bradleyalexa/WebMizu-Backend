@@ -6,7 +6,10 @@ export const AddressTypeEnum = z.enum(["apartment", "rumah", "company"]);
 
 export const createCustomerSchema = z.object({
   name: z.string().min(2, "Name is required (min 2 chars)"),
-  phone: z.string().min(8, "Phone number is required").regex(/^\+?[0-9\s-]*$/, "Invalid phone format"),
+  phone: z
+    .string()
+    .min(8, "Phone number is required")
+    .regex(/^\+?[0-9\s-]*$/, "Invalid phone format"),
   address: z.string().min(5, "Address is required"),
   addressType: AddressTypeEnum.optional().default("rumah"),
   status: CustomerStatusEnum.optional().default("active"),
@@ -16,7 +19,11 @@ export const createCustomerSchema = z.object({
 
 export const updateCustomerSchema = z.object({
   name: z.string().min(2).optional(),
-  phone: z.string().min(8).regex(/^\+?[0-9\s-]*$/).optional(),
+  phone: z
+    .string()
+    .min(8)
+    .regex(/^\+?[0-9\s-]*$/)
+    .optional(),
   address: z.string().min(5).optional(),
   addressType: AddressTypeEnum.optional(),
   status: CustomerStatusEnum.optional(),

@@ -34,7 +34,10 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
     }
 
     // Verify token with Supabase
-    const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabaseAuth.auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({

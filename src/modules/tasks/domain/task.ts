@@ -9,8 +9,8 @@ export interface Task {
   jobId?: string; // New FK
   title: string;
   description?: string;
-  taskType?: 'general' | 'service';
-  status: 'pending' | 'completed' | 'canceled';
+  taskType?: "general" | "service";
+  status: "pending" | "completed" | "canceled";
   createdAt: string;
 
   // Relations

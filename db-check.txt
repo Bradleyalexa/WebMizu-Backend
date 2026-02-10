@@ -1,6 +1,0 @@
-Record found:
-ID: 3a5ddada-3202-48f1-8086-08edfab2659a
-photo_url: https://gdfhhfcdomtpkelvmhui.supabase.co/storage/v1/object/public/customer-product/a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769450345128
---- Bucket "customer-product" files ---
-a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769449755361
-a3ec8ba7-2f97-4c60-8795-3dbfe9743ed8-product-1769450345128

@@ -3,10 +3,7 @@ import { Category } from "./domain/category";
 
 export class CategoryRepository {
   async findAll(): Promise<Category[]> {
-    const { data, error } = await supabaseAdmin
-      .from("product_category")
-      .select("*")
-      .order("name");
+    const { data, error } = await supabaseAdmin.from("product_category").select("*").order("name");
 
     if (error) throw error;
 

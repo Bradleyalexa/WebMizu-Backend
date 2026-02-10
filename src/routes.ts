@@ -19,7 +19,7 @@ routes.get(
   "/auth/me",
   authGuard,
   roleGuard("admin"), // Requirement says "admin-only" for this specific endpoint example
-  profileController.getMe
+  profileController.getMe,
 );
 
 // Customer Routes
@@ -44,11 +44,24 @@ import { CustomerProductController } from "./modules/customer-products/customer-
 const customerProductController = new CustomerProductController();
 
 routes.post("/customer-products", authGuard, roleGuard("admin"), customerProductController.create);
-routes.get("/customer-products/customer/:customerId", authGuard, roleGuard("admin"), customerProductController.getByCustomer);
-routes.get("/customer-products/:id", authGuard, roleGuard("admin"), customerProductController.getOne);
-routes.patch("/customer-products/:id", authGuard, roleGuard("admin"), customerProductController.update);
-
-
+routes.get(
+  "/customer-products/customer/:customerId",
+  authGuard,
+  roleGuard("admin"),
+  customerProductController.getByCustomer,
+);
+routes.get(
+  "/customer-products/:id",
+  authGuard,
+  roleGuard("admin"),
+  customerProductController.getOne,
+);
+routes.patch(
+  "/customer-products/:id",
+  authGuard,
+  roleGuard("admin"),
+  customerProductController.update,
+);
 
 // Contract Routes
 import { ContractsController } from "./modules/contracts/contracts.controller";

@@ -1,11 +1,10 @@
 import { supabaseAdmin } from "../../db/supabase";
 import { CreateCustomerDTO, UpdateCustomerDTO, CustomerQueryDTO } from "./dto/customer.dto";
 import { Customer } from "./domain/customer";
-import { Database } from "../../../../../packages/types/supabase";
+import { Database } from "@packages/types/supabase";
 
 export class CustomerRepository {
   private supabase = supabaseAdmin;
-
 
   private mapToDomain(data: any): Customer {
     return {
@@ -38,33 +37,34 @@ export class CustomerRepository {
       // If addressType is crucial, we should update RPC or use standard query if search is strictly name/email.
       // Given limited scope, I'll prioritize Search via RPC, but if AddressType is set without search, use standard.
       // Ideally update RPC to accept address_type.
-      
+
       const { data, count, error } = await (this.supabase as any)
         .rpc("search_customers", { search_text: search }, { count: "exact" })
         .range(from, to)
         .order("created_at", { ascending: false });
 
-       // ... handle error
-       if (error) throw error;
-       return {
-          data: (data || []).map(this.mapToDomain),
-          total: count || 0,
-       };
+      // ... handle error
+      if (error) throw error;
+      return {
+        data: (data || []).map(this.mapToDomain),
+        total: count || 0,
+      };
     }
 
     // Default list query with filters
-    let queryBuilder = this.supabase
-      .from("customers")
-      .select(`
+    let queryBuilder = this.supabase.from("customers").select(
+      `
         *,
         profiles!inner (
           name,
           email
         )
-      `, { count: "exact" });
+      `,
+      { count: "exact" },
+    );
 
     if (addressType) {
-        queryBuilder = queryBuilder.eq("address_type", addressType);
+      queryBuilder = queryBuilder.eq("address_type", addressType);
     }
 
     const { data, count, error } = await queryBuilder
@@ -82,13 +82,15 @@ export class CustomerRepository {
   async findById(id: string): Promise<Customer | null> {
     const { data, error } = await this.supabase
       .from("customers")
-      .select(`
+      .select(
+        `
         *,
         profiles!inner (
           name,
           email
         )
-      `)
+      `,
+      )
       .eq("id", id)
       .single();
 
@@ -122,13 +124,15 @@ export class CustomerRepository {
         status: payload.status,
       })
       .eq("id", id)
-      .select(`
+      .select(
+        `
         *,
         profiles!inner (
           name,
           email
         )
-      `)
+      `,
+      )
       .single();
 
     if (updateError) {
@@ -146,7 +150,7 @@ export class CustomerRepository {
         .from("profiles")
         .update({ name: payload.name })
         .eq("id", id);
-      
+
       if (profileError) throw profileError;
     }
 
@@ -173,7 +177,7 @@ export class CustomerRepository {
   async delete(id: string): Promise<void> {
     const { error } = await this.supabase
       .from("customers")
-      .update({ status: 'inactive' })
+      .update({ status: "inactive" })
       .eq("id", id);
 
     if (error) throw error;

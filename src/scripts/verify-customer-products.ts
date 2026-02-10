@@ -6,8 +6,12 @@ async function main() {
   const service = new CustomerProductService();
 
   console.log("1. Fetching a customer and product...");
-  const { data: customer } = await supabaseAdmin.from('customers').select('id').limit(1).single();
-  const { data: product } = await supabaseAdmin.from('product_catalog').select('id').limit(1).single();
+  const { data: customer } = await supabaseAdmin.from("customers").select("id").limit(1).single();
+  const { data: product } = await supabaseAdmin
+    .from("product_catalog")
+    .select("id")
+    .limit(1)
+    .single();
 
   if (!customer) {
     console.error("No customer found. Please create a customer first.");
@@ -26,12 +30,12 @@ async function main() {
     const created = await service.createCustomerProduct({
       customer_id: customer.id,
       product_catalog_id: product.id,
-      installation_date: '2023-01-01',
-      installation_location: 'Test Location',
+      installation_date: "2023-01-01",
+      installation_location: "Test Location",
       cust_product_price: 1500000,
       quantity_owned: 1,
-      status: 'active',
-      notes: 'Initial Note'
+      status: "active",
+      notes: "Initial Note",
     });
     console.log("   ✅ Created successfully:");
     console.log(`      ID: ${created.id}`);
@@ -40,17 +44,17 @@ async function main() {
     console.log("\n3. Fetching by Customer...");
     const list = await service.getCustomerProducts(customer.id);
     console.log(`   ✅ Fetched ${list.length} item(s) for customer.`);
-    const found = list.find(i => i.id === created.id);
+    const found = list.find((i) => i.id === created.id);
     if (found) {
-        console.log("      Found created item in list.");
+      console.log("      Found created item in list.");
     } else {
-        console.error("      ❌ Created item NOT found in list!");
+      console.error("      ❌ Created item NOT found in list!");
     }
 
     console.log("\n4. Updating Customer Product...");
     const updated = await service.updateCustomerProduct(created.id, {
       notes: "Updated via verification script",
-      cust_product_price: 2000000
+      cust_product_price: 2000000,
     });
     console.log("   ✅ Updated successfully:");
     console.log(`      Notes: ${updated.notes}`);
@@ -60,7 +64,6 @@ async function main() {
     // console.log("\n5. Cleaning up (Deleting)...");
     // await supabaseAdmin.from('customer_products').delete().eq('id', created.id);
     // console.log("   ✅ Deleted.");
-
   } catch (error) {
     console.error("❌ Error during verification:", error);
   }

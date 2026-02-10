@@ -24,4 +24,3 @@ export const scheduleQuerySchema = z.object({
 export type CreateScheduleDTO = z.infer<typeof createScheduleSchema>;
 export type UpdateScheduleDTO = z.infer<typeof updateScheduleSchema>;
 export type ScheduleQueryDTO = z.infer<typeof scheduleQuerySchema>;
-

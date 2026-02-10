@@ -1,8 +1,8 @@
-import 'dotenv/config'
-import { z } from 'zod'
+import "dotenv/config";
+import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']),
+  NODE_ENV: z.enum(["development", "production", "test"]),
   PORT: z.string(),
 
   SUPABASE_URL: z.string().url(),
@@ -11,14 +11,14 @@ const envSchema = z.object({
 
   SUPABASE_STORAGE_BUCKET_PUBLIC: z.string(),
   SUPABASE_STORAGE_BUCKET_PRIVATE: z.string(),
-})
+});
 
-const _env = envSchema.safeParse(process.env)
+const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  console.error('❌ Invalid environment variables')
-  console.error(_env.error.format())
-  process.exit(1)
+  console.error("❌ Invalid environment variables");
+  console.error(_env.error.format());
+  process.exit(1);
 }
 
 export const env = {
@@ -33,4 +33,4 @@ export const env = {
     PUBLIC: _env.data.SUPABASE_STORAGE_BUCKET_PUBLIC,
     PRIVATE: _env.data.SUPABASE_STORAGE_BUCKET_PRIVATE,
   },
-}
+};

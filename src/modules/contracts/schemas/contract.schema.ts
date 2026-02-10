@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createContractSchema = z.object({
   customer_product_id: z.string().uuid(),
@@ -13,10 +13,10 @@ export const createContractSchema = z.object({
 
 export const updateContractSchema = createContractSchema.partial().extend({
   services_used: z.number().int().min(0).optional(),
-  status: z.enum(['active', 'expired']).optional(),
+  status: z.enum(["active", "expired"]).optional(),
 });
 
 export const contractQuerySchema = z.object({
-  status: z.enum(['active', 'expired', 'all']).optional(),
+  status: z.enum(["active", "expired", "all"]).optional(),
   productName: z.string().optional(),
 });

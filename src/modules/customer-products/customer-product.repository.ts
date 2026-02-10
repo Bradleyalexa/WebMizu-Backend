@@ -40,7 +40,7 @@ export class CustomerProductRepository {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    
+
     // Map in parallel
     return Promise.all((data || []).map((row) => this.mapToDomainAsync(row)));
   }
@@ -73,18 +73,18 @@ export class CustomerProductRepository {
 
   private async signPhotoUrl(pathOrUrl: string | null): Promise<string | null> {
     if (!pathOrUrl) return null;
-    
+
     let path = pathOrUrl;
 
     // Check if it's a Supabase public URL for our bucket and extract the path
     // Example: https://[project].supabase.co/storage/v1/object/public/customer-product/[path]
-    if (pathOrUrl.startsWith('http')) {
-      if (pathOrUrl.includes('/customer-product/')) {
-        const parts = pathOrUrl.split('/customer-product/');
+    if (pathOrUrl.startsWith("http")) {
+      if (pathOrUrl.includes("/customer-product/")) {
+        const parts = pathOrUrl.split("/customer-product/");
         if (parts.length > 1 && parts[1]) {
           path = parts[1]; // Use the extracted path to sign
         } else {
-            return pathOrUrl; // Return original if parsing fails
+          return pathOrUrl; // Return original if parsing fails
         }
       } else {
         return pathOrUrl; // External URL or valid public URL
@@ -92,16 +92,15 @@ export class CustomerProductRepository {
     }
 
     try {
-      const { data, error } = await supabaseAdmin
-        .storage
-        .from('customer-product')
+      const { data, error } = await supabaseAdmin.storage
+        .from("customer-product")
         .createSignedUrl(path, 3600); // 1 hour expiry
 
       if (error || !data) {
         console.warn(`Failed to sign URL for path ${path}:`, error);
         return pathOrUrl; // Fallback to raw path if signing fails
       }
-      
+
       return data.signedUrl;
     } catch (e) {
       console.warn(`Exception signing URL for path ${path}:`, e);
@@ -112,11 +111,15 @@ export class CustomerProductRepository {
   private async mapToDomainAsync(row: any): Promise<CustomerProduct> {
     // Determine contract status (active if any active contract exists)
     const contracts = row.contracts || [];
-    const activeContract = contracts.some((c: any) => c.status === 'active');
-    const contractStatus = activeContract ? 'Active' : (contracts.length > 0 ? 'Expired' : 'No Contract');
+    const activeContract = contracts.some((c: any) => c.status === "active");
+    const contractStatus = activeContract
+      ? "Active"
+      : contracts.length > 0
+        ? "Expired"
+        : "No Contract";
 
     // Get order status if linked
-    const orderStatus = row.order_product?.orders?.status || 'Manual';
+    const orderStatus = row.order_product?.orders?.status || "Manual";
 
     // Sign the URL if present
     const signedUrl = await this.signPhotoUrl(row.photo_url);
@@ -136,13 +139,13 @@ export class CustomerProductRepository {
       photoUrl: signedUrl,
       notes: row.notes,
       createdAt: row.created_at,
-      
+
       // Joined fields
       productName: row.product_catalog?.name,
       productModel: row.product_catalog?.model,
       technicianName: row.technicians?.name,
       orderStatus: orderStatus as string,
-      contractStatus: contractStatus
+      contractStatus: contractStatus,
     } as CustomerProduct & { contractStatus: string };
   }
 }

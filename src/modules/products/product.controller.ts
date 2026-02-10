@@ -7,39 +7,31 @@ import { roleGuard } from "../../middleware/role.middleware";
 const router = Router();
 const service = new ProductService();
 
-router.get(
-  "/",
-  authGuard,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const page = parseInt(req.query['page'] as string) || 1;
-      const limit = parseInt(req.query['limit'] as string) || 20;
-      const q = req.query['q'] as string;
-      const categoryId = req.query['categoryId'] as string;
-      const offset = (page - 1) * limit;
+router.get("/", authGuard, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query["page"] as string) || 1;
+    const limit = parseInt(req.query["limit"] as string) || 20;
+    const q = req.query["q"] as string;
+    const categoryId = req.query["categoryId"] as string;
+    const offset = (page - 1) * limit;
 
-      const result = await service.findAll({ limit, offset, q, categoryId });
-      res.json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
+    const result = await service.findAll({ limit, offset, q, categoryId });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
-router.get(
-  "/:id",
-  authGuard,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = req.params['id'];
-      if (!id) throw new Error("ID is required");
-      const result = await service.findOne(id);
-      res.json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
+router.get("/:id", authGuard, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params["id"];
+    if (!id) throw new Error("ID is required");
+    const result = await service.findOne(id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 router.post(
   "/",
@@ -53,7 +45,7 @@ router.post(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 router.put(
@@ -62,7 +54,7 @@ router.put(
   roleGuard("admin"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params['id'];
+      const id = req.params["id"];
       if (!id) throw new Error("ID is required");
       const payload = updateProductSchema.parse(req.body);
       const result = await service.update(id, payload);
@@ -70,7 +62,7 @@ router.put(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 router.delete(
@@ -79,14 +71,14 @@ router.delete(
   roleGuard("admin"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params['id'];
+      const id = req.params["id"];
       if (!id) throw new Error("ID is required");
       await service.delete(id);
       res.json({ success: true, message: "Product deleted" });
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 export default router;

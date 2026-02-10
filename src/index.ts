@@ -9,10 +9,12 @@ const app = express();
 
 // Security Middleware
 app.use(helmet());
-app.use(cors({
-  origin: true, // Allow all origins for dev, or specify ["http://localhost:3000", "http://192.168.56.1:3000"]
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: true, // Allow all origins for dev, or specify ["http://localhost:3000", "http://192.168.56.1:3000"]
+    credentials: true,
+  }),
+);
 
 // Body Parsing
 app.use(express.json());

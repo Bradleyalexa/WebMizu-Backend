@@ -1,24 +1,38 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "module": "CommonJS",
     "moduleResolution": "Node",
-
     "strict": true,
     "allowJs": false,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "types": ["node"],
-
-    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "noEmit": false,
+    "outDir": "dist",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "noUncheckedIndexedAccess": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+    "baseUrl": ".",
+    "paths": {
+      "@packages/*": [
+        "packages/*"
+      ]
+    }
   },
-
-  "include": ["src", "../../packages/types"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "src",
+    "packages/types"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }
