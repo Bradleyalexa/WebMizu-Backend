@@ -100,8 +100,10 @@ export class CustomerRepository {
 
   async create(payload: CreateCustomerDTO): Promise<Customer> {
     // 1. Create Auth User (Triggers handle_new_user -> creates Profile & Customer)
+    const email = payload.email || `customer_${Date.now()}@webmizu.local`;
+    
     const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
-      email: payload.email,
+      email: email,
       password: payload.password || "12345678", // Default password if not provided
       email_confirm: true,
       user_metadata: {

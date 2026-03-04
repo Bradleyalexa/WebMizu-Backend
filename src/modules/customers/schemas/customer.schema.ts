@@ -13,7 +13,7 @@ export const createCustomerSchema = z.object({
   address: z.string().min(5, "Address is required"),
   addressType: AddressTypeEnum.optional().default("rumah"),
   status: CustomerStatusEnum.optional().default("active"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   password: z.string().min(6).optional(), // Admin can set it, or we generate one
 });
 
