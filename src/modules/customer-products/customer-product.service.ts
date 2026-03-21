@@ -19,6 +19,7 @@ export class CustomerProductService {
       customer_id: dto.customer_id,
       product_catalog_id: dto.product_catalog_id,
       installation_technician_id: dto.installation_technician_id,
+      installation_address_id: dto.installation_address_id,
       installation_date: dto.installation_date,
       installation_location: dto.installation_location,
       cust_product_price: dto.cust_product_price, // Already mapped in DTO
@@ -55,6 +56,8 @@ export class CustomerProductService {
     if (dto.product_catalog_id !== undefined) dbData.product_catalog_id = dto.product_catalog_id;
     if (dto.installation_technician_id !== undefined)
       dbData.installation_technician_id = dto.installation_technician_id;
+    if (dto.installation_address_id !== undefined)
+      dbData.installation_address_id = dto.installation_address_id;
     if (dto.installation_date !== undefined) dbData.installation_date = dto.installation_date;
     if (dto.installation_location !== undefined)
       dbData.installation_location = dto.installation_location;
@@ -76,6 +79,7 @@ export class CustomerProductService {
       product_catalog_id: domain.productCatalogId,
       order_product_id: domain.orderProductId,
       installation_technician_id: domain.installationTechnicianId,
+      installation_address_id: domain.installationAddressId,
       status: domain.status,
       quantity_owned: domain.quantityOwned,
       cust_product_price: domain.custProductPrice,

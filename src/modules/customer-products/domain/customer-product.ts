@@ -9,6 +9,7 @@ export interface CustomerProduct {
   custProductPrice?: number | null;
   installationDate?: string | null; // ISO Date string
   installationLocation?: string | null;
+  installationAddressId?: string | null;
   description?: string | null;
   photoUrl?: string | null;
   notes?: string | null;

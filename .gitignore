@@ -9,6 +9,7 @@ pnpm-debug.log*
 # Environment variables
 .env
 .env.*
+next-env.d.ts
 
 # Build outputs
 dist/

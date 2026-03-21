@@ -4,6 +4,7 @@ export const createCustomerProductSchema = z.object({
   customer_id: z.string().uuid(),
   product_catalog_id: z.string().uuid(),
   installation_technician_id: z.string().uuid().optional(),
+  installation_address_id: z.string().uuid().optional(),
   installation_date: z.string().date().optional(), // YYYY-MM-DD
   installation_location: z.string().optional(),
   cust_product_price: z.coerce.number().optional(),

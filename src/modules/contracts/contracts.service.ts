@@ -63,7 +63,7 @@ export class ContractsService {
     return contract;
   }
 
-  async findAll(query?: { status?: string; productName?: string }): Promise<Contract[]> {
+  async findAll(query?: { status?: string; productName?: string; customerId?: string; page?: number; limit?: number }): Promise<{ data: Contract[]; total: number }> {
     return this.repo.findAll(query);
   }
 

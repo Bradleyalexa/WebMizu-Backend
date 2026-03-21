@@ -18,6 +18,11 @@ export class CustomerProductRepository {
     order_product (
       order_id,
       status:orders(status)
+    ),
+    installation_address:addresses!customer_products_installation_address_id_fkey(
+      id,
+      cust_address,
+      address_type
     )
   `;
 
@@ -133,8 +138,9 @@ export class CustomerProductRepository {
       status: row.status,
       quantityOwned: row.quantity_owned,
       custProductPrice: row.cust_product_price,
+      installationAddressId: row.installation_address_id,
       installationDate: row.installation_date,
-      installationLocation: row.installation_location,
+      installationLocation: row.installation_location || row.installation_address?.cust_address,
       description: row.description,
       photoUrl: signedUrl,
       notes: row.notes,

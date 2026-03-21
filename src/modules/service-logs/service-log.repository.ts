@@ -29,13 +29,13 @@ export class ServiceLogRepository {
         "Unknown",
       productName: row.customer_products?.product_catalog?.name || "Unknown Product",
       productModel: row.customer_products?.product_catalog?.model,
-      installationLocation: row.customer_products?.installation_location,
-      customerAddress: row.customer_products?.customers?.address, // Map address
+      installationLocation: row.customer_products?.installation_location || row.customer_products?.installation_address?.cust_address,
+      customerAddress: row.customer_products?.customers?.addresses?.cust_address,
     };
   }
 
-  async findAll(query: { search?: string; customerProductId?: string }): Promise<ServiceLog[]> {
-    const { search, customerProductId } = query;
+  async findAll(query: { search?: string; customerProductId?: string; customerId?: string }): Promise<ServiceLog[]> {
+    const { search, customerProductId, customerId } = query;
     let queryBuilder = supabaseAdmin
       .from(this.table)
       .select(
@@ -44,11 +44,13 @@ export class ServiceLogRepository {
         technicians ( name ),
         customer_products!inner (
           id,
+          customer_id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers!inner (
             id,
-            address,
+            addresses!addresses_customer_id_fkey(cust_address),
             profiles ( name )
           )
         )
@@ -58,6 +60,10 @@ export class ServiceLogRepository {
 
     if (customerProductId) {
       queryBuilder = queryBuilder.eq("customer_product_id", customerProductId);
+    }
+
+    if (customerId) {
+        queryBuilder = queryBuilder.eq("customer_products.customer_id", customerId);
     }
 
     if (search) {
@@ -90,7 +96,6 @@ export class ServiceLogRepository {
       let orQuery = `pekerjaan.ilike.%${search}%,notes.ilike.%${search}%`;
       if (customerProductIds.length > 0) {
         const idsString = customerProductIds.join(",");
-        // customer_product_id is the FK in service_log
         orQuery += `,customer_product_id.in.(${idsString})`;
       }
 
@@ -120,10 +125,11 @@ export class ServiceLogRepository {
         customer_products (
           id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers (
             id,
-            address,
+            addresses!addresses_customer_id_fkey(cust_address),
             profiles ( name )
           )
         )
@@ -133,6 +139,36 @@ export class ServiceLogRepository {
 
     if (error) throw error;
     return this.mapToDomain(result);
+  }
+
+  async findById(id: string): Promise<ServiceLog | null> {
+    const { data, error } = await supabaseAdmin
+      .from(this.table)
+      .select(
+        `
+        *,
+        technicians ( name ),
+        customer_products (
+          id,
+          installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
+          product_catalog ( name, model ),
+          customers (
+            id,
+            addresses!addresses_customer_id_fkey(cust_address),
+            profiles ( name )
+          )
+        )
+      `,
+      )
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
+    return this.mapToDomain(data);
   }
 
   async findByExpectedId(expectedId: string): Promise<ServiceLog | null> {
@@ -145,10 +181,11 @@ export class ServiceLogRepository {
         customer_products (
           id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers (
             id,
-            address,
+            addresses!addresses_customer_id_fkey(cust_address),
             profiles ( name )
           )
         )
@@ -157,7 +194,10 @@ export class ServiceLogRepository {
       .eq("expected_id", expectedId)
       .single();
 
-    if (error) return null;
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
     return this.mapToDomain(data);
   }
 
@@ -171,10 +211,11 @@ export class ServiceLogRepository {
         customer_products (
           id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers (
             id,
-            address,
+            addresses!addresses_customer_id_fkey(cust_address),
             profiles ( name )
           )
         )
@@ -183,15 +224,19 @@ export class ServiceLogRepository {
       .eq("task_id", taskId)
       .single();
 
-    if (error) return null;
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
     return this.mapToDomain(data);
   }
 
   async update(id: string, data: Partial<CreateServiceLogDTO>): Promise<ServiceLog> {
-    const payload: any = { ...data };
-    if (data.service_date && data.service_date instanceof Date) {
-      payload.service_date = data.service_date.toISOString();
-    }
+    const payload = {
+      ...data,
+      service_date:
+        data.service_date instanceof Date ? data.service_date.toISOString() : data.service_date,
+    };
 
     const { data: result, error } = await supabaseAdmin
       .from(this.table)
@@ -204,10 +249,11 @@ export class ServiceLogRepository {
         customer_products (
           id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers (
             id,
-            address,
+            addresses!addresses_customer_id_fkey(cust_address),
             profiles ( name )
           )
         )
@@ -217,5 +263,11 @@ export class ServiceLogRepository {
 
     if (error) throw error;
     return this.mapToDomain(result);
+  }
+
+  async remove(id: string): Promise<void> {
+    const { error } = await supabaseAdmin.from(this.table).delete().eq("id", id);
+
+    if (error) throw error;
   }
 }

@@ -2,6 +2,7 @@ export interface CreateCustomerProductDTO {
   customer_id: string;
   product_catalog_id: string;
   installation_technician_id?: string;
+  installation_address_id?: string;
   installation_date?: string;
   installation_location?: string;
   cust_product_price?: number;
@@ -20,6 +21,7 @@ export interface CustomerProductResponseDTO {
   product_catalog_id: string;
   order_product_id?: string | null;
   installation_technician_id?: string | null;
+  installation_address_id?: string | null;
   status: string;
   quantity_owned: number;
   cust_product_price?: number | null;

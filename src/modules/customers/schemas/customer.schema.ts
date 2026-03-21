@@ -15,6 +15,14 @@ export const createCustomerSchema = z.object({
   status: CustomerStatusEnum.optional().default("active"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   password: z.string().min(6).optional(), // Admin can set it, or we generate one
+  addresses: z.array(
+    z.object({
+      id: z.string().optional(),
+      custAddress: z.string().min(5, "Address is required"),
+      addressType: AddressTypeEnum.optional().default("rumah"),
+      isPrimary: z.boolean().optional().default(false),
+    })
+  ).optional(),
 });
 
 export const updateCustomerSchema = z.object({
@@ -27,11 +35,19 @@ export const updateCustomerSchema = z.object({
   address: z.string().min(5).optional(),
   addressType: AddressTypeEnum.optional(),
   status: CustomerStatusEnum.optional(),
+  addresses: z.array(
+    z.object({
+      id: z.string().optional(),
+      custAddress: z.string().min(5, "Address is required"),
+      addressType: AddressTypeEnum.optional().default("rumah"),
+      isPrimary: z.boolean().optional().default(false),
+    })
+  ).optional(),
 });
 
 export const customerQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   search: z.string().optional(),
-  addressType: AddressTypeEnum.optional(),
+  addressType: z.union([AddressTypeEnum, z.literal("all")]).optional(),
 });

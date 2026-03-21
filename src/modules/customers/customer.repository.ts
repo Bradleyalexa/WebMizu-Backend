@@ -10,10 +10,17 @@ export class CustomerRepository {
     return {
       id: data.id,
       name: data.profiles?.name || "Unknown",
-      email: data.profiles?.email || "", // Now available from profiles
+      email: data.profiles?.email || "",
       phone: data.phone,
-      address: data.address,
-      addressType: data.address_type,
+      addressId: data.address_id,
+      address: data.address_id && data.addresses ? data.addresses.find((a: any) => a.id === data.address_id)?.cust_address : data.addresses?.[0]?.cust_address,
+      addressType: data.address_id && data.addresses ? data.addresses.find((a: any) => a.id === data.address_id)?.address_type : data.addresses?.[0]?.address_type,
+      addresses: data.addresses?.map((a: any) => ({
+        id: a.id,
+        custAddress: a.cust_address,
+        addressType: a.address_type,
+        isPrimary: a.is_primary ?? false
+      })) || [],
       status: data.status,
       createdAt: data.created_at,
     };
@@ -26,52 +33,92 @@ export class CustomerRepository {
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
 
-    // Use RPC for search to handle complex OR logic across joined tables
+    // When searching, use the existing search_customers RPC which handles cross-table OR via SQL
     if (search) {
-      // Note: RPC might not support addressType filter unless updated.
-      // If addressType IS provided with search, we might need a dynamic query or update RPC.
-      // For now, assuming RPC is only for text search.
-      // Let's try to chaining filters if possible, but RPC returns setof customers directly.
-      // If RPC is 'clean', we can't easily append .eq('address_type', ...) if it's inside the function.
-      // However, if we assume 'search' is prioritized, we use RPC.
-      // If addressType is crucial, we should update RPC or use standard query if search is strictly name/email.
-      // Given limited scope, I'll prioritize Search via RPC, but if AddressType is set without search, use standard.
-      // Ideally update RPC to accept address_type.
+      const { data: rpcData, error: rpcError } = await (this.supabase as any)
+        .rpc("search_customers", { search_text: search })
+        .range(from, to);
 
-      const { data, count, error } = await (this.supabase as any)
-        .rpc("search_customers", { search_text: search }, { count: "exact" })
-        .range(from, to)
-        .order("created_at", { ascending: false });
+      if (rpcError) {
+        // RPC has a bug (e.g. bad column reference). Fall back to phone-only search.
+        console.warn("search_customers RPC failed, falling back to phone search:", rpcError.message);
+        
+        const addressJoin2 = (addressType && addressType !== "all")
+          ? "addresses!addresses_customer_id_fkey!inner"
+          : "addresses!addresses_customer_id_fkey";
 
-      // ... handle error
-      if (error) throw error;
-      return {
-        data: (data || []).map(this.mapToDomain),
-        total: count || 0,
-      };
+        let fallbackQuery = this.supabase.from("customers").select(
+          `*, profiles!inner(name, email), ${addressJoin2}(id, cust_address, address_type, is_primary)`,
+          { count: "exact" }
+        ).ilike("phone", `%${search}%`);
+
+        if (addressType && addressType !== "all") {
+          fallbackQuery = fallbackQuery.eq("addresses.address_type", addressType);
+        }
+
+        const { data: fbData, count: fbCount, error: fbError } = await fallbackQuery
+          .range(from, to)
+          .order("created_at", { ascending: false });
+
+        if (fbError) throw fbError;
+        return { data: (fbData || []).map(this.mapToDomain), total: fbCount || 0 };
+      }
+
+      // RPC succeeded — map the flat row shape to domain
+      const results = (rpcData || []).map((row: any): Customer => ({
+        id: row.id,
+        name: (row.profiles as any)?.name || "Unknown",
+        email: (row.profiles as any)?.email || "",
+        phone: row.phone,
+        addressId: row.address_id,
+        address: row.address,
+        addressType: row.address_type,
+        addresses: [],
+        status: row.status,
+        createdAt: row.created_at,
+      }));
+
+      const filtered = (addressType && addressType !== "all")
+        ? results.filter((c) => c.addressType === addressType)
+        : results;
+
+      return { data: filtered, total: filtered.length };
     }
 
-    // Default list query with filters
-    let queryBuilder = this.supabase.from("customers").select(
-      `
-        *,
-        profiles!inner (
-          name,
-          email
-        )
-      `,
-      { count: "exact" },
-    );
+    // Standard list path (no search) - uses PostgREST query builder
+    const addressJoin = (addressType && addressType !== "all")
+      ? "addresses!addresses_customer_id_fkey!inner"
+      : "addresses!addresses_customer_id_fkey";
 
-    if (addressType) {
-      queryBuilder = queryBuilder.eq("address_type", addressType);
+    const selectString = `
+      *,
+      profiles!inner (
+        name,
+        email
+      ),
+      ${addressJoin} (
+        id,
+        cust_address,
+        address_type,
+        is_primary
+      )
+    `;
+
+    let queryBuilder = this.supabase.from("customers").select(selectString, { count: "exact" });
+
+    // Handle Address Type Filter
+    if (addressType && addressType !== "all") {
+      queryBuilder = queryBuilder.eq("addresses.address_type", addressType);
     }
 
     const { data, count, error } = await queryBuilder
       .range(from, to)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Fetch Customers Error:", error);
+      throw error;
+    }
 
     return {
       data: (data || []).map(this.mapToDomain),
@@ -88,6 +135,12 @@ export class CustomerRepository {
         profiles!inner (
           name,
           email
+        ),
+        addresses!addresses_customer_id_fkey (
+          id,
+          cust_address,
+          address_type,
+          is_primary
         )
       `,
       )
@@ -116,13 +169,51 @@ export class CustomerRepository {
 
     const id = authData.user.id;
 
-    // 2. Update Customer details (Trigger only created the row with ID)
+    // 2. Create Addresses if provided
+    let primaryAddressId = null;
+    
+    if (payload.addresses && payload.addresses.length > 0) {
+      const addressesToInsert = payload.addresses.map((a) => ({
+        cust_address: a.custAddress,
+        address_type: a.addressType || "rumah",
+        is_primary: a.isPrimary || false,
+        customer_id: id,
+      }));
+
+      const { data: insertedAddresses, error: addressError } = await this.supabase
+        .from("addresses")
+        .insert(addressesToInsert)
+        .select();
+
+      if (addressError) throw addressError;
+
+      const primary = insertedAddresses.find((a) => a.is_primary) || insertedAddresses[0];
+      if (primary) {
+        primaryAddressId = primary.id;
+      }
+    } else if (payload.address) {
+      // Legacy fallback
+      const { data: addressData, error: addressError } = await this.supabase
+        .from("addresses")
+        .insert({
+          cust_address: payload.address,
+          address_type: payload.addressType || "rumah",
+          is_primary: true,
+          customer_id: id,
+        })
+        .select()
+        .single();
+      
+      if (addressError) throw addressError;
+      primaryAddressId = addressData.id;
+    }
+
+    // 3. Update Customer details (Trigger only created the row with ID)
     const { data, error: updateError } = await this.supabase
       .from("customers")
       .update({
         phone: payload.phone,
-        address: payload.address,
-        address_type: payload.addressType,
+        address_id: primaryAddressId,
         status: payload.status,
       })
       .eq("id", id)
@@ -132,6 +223,12 @@ export class CustomerRepository {
         profiles!inner (
           name,
           email
+        ),
+        addresses!addresses_customer_id_fkey (
+          id,
+          cust_address,
+          address_type,
+          is_primary
         )
       `,
       )
@@ -156,11 +253,116 @@ export class CustomerRepository {
       if (profileError) throw profileError;
     }
 
-    // 2. Update Customer fields
+    // 2. Handle Address update
+    let primaryAddressId: string | undefined = undefined;
+
+    if (payload.addresses) {
+      const { data: existing } = await this.supabase
+        .from("addresses")
+        .select("id")
+        .eq("customer_id", id);
+      
+      const existingIds = existing?.map((a) => a.id) || [];
+      const incomingIds = payload.addresses.map((a) => a.id).filter(Boolean) as string[];
+      const toDelete = existingIds.filter((extId) => !incomingIds.includes(extId));
+
+      for (const addr of payload.addresses) {
+        if (addr.id) {
+          // Update
+          const { error } = await this.supabase
+            .from("addresses")
+            .update({
+              cust_address: addr.custAddress,
+              address_type: addr.addressType || "rumah",
+              is_primary: addr.isPrimary || false,
+            })
+            .eq("id", addr.id);
+          if (error) throw error;
+          if (addr.isPrimary) primaryAddressId = addr.id;
+        } else {
+          // Insert
+          const { data: newAddr, error } = await this.supabase
+            .from("addresses")
+            .insert({
+              cust_address: addr.custAddress,
+              address_type: addr.addressType || "rumah",
+              is_primary: addr.isPrimary || false,
+              customer_id: id,
+            })
+            .select()
+            .single();
+            
+          if (error) throw error;
+          if (addr.isPrimary) primaryAddressId = newAddr.id;
+        }
+      }
+
+      // If no primary address is explicitly marked but array isn't empty, pick the first existing/new id
+      if (!primaryAddressId && payload.addresses.length > 0) {
+         // Attempt to find current address_id of customer
+         const { data: custInfo } = await this.supabase.from("customers").select("address_id").eq("id", id).single();
+         if (custInfo?.address_id && incomingIds.includes(custInfo.address_id)) {
+            primaryAddressId = custInfo.address_id;
+         } else {
+            // Unlikely to hit this properly without fetching again, but we just let address_id be if undefined
+         }
+      }
+      
+      // We must pre-update the customer's address_id pointer if it's changing or if we are deleting the current one.
+      // Easiest is to update customer address_id to null or new primary, then delete removed addresses
+      if (primaryAddressId !== undefined) {
+         await this.supabase.from("customers").update({ address_id: primaryAddressId }).eq("id", id);
+      } else if (toDelete.length > 0) {
+         // Only set to null if the deleted address is the primary one, but for safety:
+         await this.supabase.from("customers").update({ address_id: null }).eq("id", id);
+      }
+
+      if (toDelete.length > 0) {
+        await this.supabase.from("addresses").delete().in("id", toDelete);
+      }
+    } else if (payload.address !== undefined || payload.addressType !== undefined) {
+      // Legacy update
+      const current = await this.supabase
+        .from("customers")
+        .select("address_id")
+        .eq("id", id)
+        .single();
+
+      if (current.data?.address_id) {
+        const addressUpdates: any = {};
+        if (payload.address !== undefined) addressUpdates.cust_address = payload.address;
+        if (payload.addressType !== undefined) addressUpdates.address_type = payload.addressType;
+
+        const { error: addressError } = await this.supabase
+          .from("addresses")
+          .update(addressUpdates)
+          .eq("id", current.data.address_id);
+
+        if (addressError) throw addressError;
+      } else if (payload.address) {
+        const { data: addressData, error: addressError } = await this.supabase
+          .from("addresses")
+          .insert({
+            cust_address: payload.address,
+            address_type: payload.addressType || "rumah",
+            is_primary: true,
+            customer_id: id,
+          })
+          .select()
+          .single();
+
+        if (addressError) throw addressError;
+        primaryAddressId = addressData.id;
+      }
+    }
+
+    // 3. Update Customer fields
     const customerUpdates: any = {};
     if (payload.phone !== undefined) customerUpdates.phone = payload.phone;
-    if (payload.address !== undefined) customerUpdates.address = payload.address;
-    if (payload.addressType !== undefined) customerUpdates.address_type = payload.addressType;
+    if (primaryAddressId !== undefined && payload.addresses === undefined) { 
+        // If payload.addresses was provided, we already updated primaryAddressId above to avoid FK constraint issues
+        customerUpdates.address_id = primaryAddressId;
+    }
     if (payload.status !== undefined) customerUpdates.status = payload.status;
 
     if (Object.keys(customerUpdates).length > 0) {

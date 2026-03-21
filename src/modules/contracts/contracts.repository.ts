@@ -4,16 +4,42 @@ import { Contract } from "./domain/contract";
 export class ContractsRepository {
   private readonly table = "contracts";
   private readonly scheduleTable = "schedule_expected";
+
+  // Lightweight query for list view - only columns actually rendered in the table
+  private readonly selectQueryList = `
+    id,
+    status,
+    start_date,
+    end_date,
+    total_service,
+    services_used,
+    created_at,
+    customer_products (
+      customer_id,
+      installation_location,
+      customers (
+        id,
+        profiles ( name )
+      ),
+      product_catalog (
+        name,
+        model
+      )
+    )
+  `;
+
+  // Full query for detail view - includes all schedules
   private readonly selectQuery = `
     *,
     customer_products (
+      id,
+      customer_id,
       cust_product_price,
       installation_location,
       customers (
         id,
         profiles (
-            name,
-            email
+            name
         )
       ),
       product_catalog (
@@ -30,16 +56,6 @@ export class ContractsRepository {
     )
   `;
 
-  async create(data: any): Promise<Contract> {
-    const { data: created, error } = await supabaseAdmin
-      .from(this.table)
-      .insert(data)
-      .select(this.selectQuery)
-      .single();
-
-    if (error) throw error;
-    return this.mapToDomainAsync(created);
-  }
 
   async createSchedules(schedules: any[]): Promise<void> {
     const { error } = await supabaseAdmin.from(this.scheduleTable).insert(schedules);
@@ -47,35 +63,92 @@ export class ContractsRepository {
     if (error) throw error;
   }
 
-  async findAll(query?: { status?: string; productName?: string }): Promise<Contract[]> {
+  async findAll(query?: { status?: string; productName?: string; customerId?: string; page?: number; limit?: number }): Promise<{ data: Contract[]; total: number }> {
+    const pageNum = Number(query?.page) || 1;
+    const limitNum = Number(query?.limit) || 20; // Reduced default: 20 rows is plenty for the list view
+    const from = (pageNum - 1) * limitNum;
+    const to = from + limitNum - 1;
+
+    // Filtering by product name requires !inner joins to push predicates into the JOIN
+    const needsInnerJoin = !!query?.productName;
+    const selectString = needsInnerJoin
+      ? `
+          id, status, start_date, end_date, total_service, services_used, created_at,
+          customer_products!inner (
+            customer_id,
+            installation_location,
+            customers!inner ( id, profiles!inner ( name ) ),
+            product_catalog!inner ( name, model )
+          )
+        `
+      : this.selectQueryList;
+
+    // Skip count for customer-detail requests — they don't paginate and count is expensive
+    const needsCount = !query?.customerId;
+
     let queryBuilder = supabaseAdmin
       .from(this.table)
-      .select(this.selectQuery)
-      .order("created_at", { ascending: false });
+      .select(selectString, needsCount ? { count: "planned" } : { count: undefined });
 
     if (query?.status && query.status !== "all") {
       queryBuilder = queryBuilder.eq("status", query.status as any);
     }
 
-    const { data, error } = await queryBuilder;
+    if (query?.customerId) {
+      queryBuilder = queryBuilder.eq("customer_products.customer_id", query.customerId);
+    }
 
-    if (error) throw error;
-
-    let contracts = await Promise.all((data || []).map((row) => this.mapToDomainAsync(row)));
-
-    // Filter by Product Name in memory (since it's a joined relation and Supabase filtering on deep joins is tricky without flat table)
-    // Or we could use !inner join to filter, but mapToDomain is simpler for fuzzy search on product name if volume is low.
-    // Given the structure, simple client-side/app-side filter for product name search is acceptable for MVP scale.
     if (query?.productName) {
-      const lowerTerm = query.productName.toLowerCase();
-      contracts = contracts.filter(
-        (c) =>
-          c.productName?.toLowerCase().includes(lowerTerm) ||
-          c.customerName?.toLowerCase().includes(lowerTerm),
+      const term = `%${query.productName}%`;
+      queryBuilder = queryBuilder.or(
+        `customer_products.product_catalog.name.ilike.${term},customer_products.customers.profiles.name.ilike.${term},customer_products.product_catalog.model.ilike.${term}`
       );
     }
 
-    return contracts;
+    const { data, count, error } = await queryBuilder
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("Fetch Contracts Error:", error);
+      throw error;
+    }
+
+    const contracts = (data || []).map((row: any) => this.mapToDomain(row));
+
+    return {
+      data: contracts,
+      total: count || 0,
+    };
+  }
+
+  private mapToDomain(row: any, signedUrl?: string | null): Contract {
+    return {
+      id: row.id,
+      customerProductId: row.customer_product_id,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      intervalMonths: row.interval_months,
+      totalService: row.total_service,
+      servicesUsed: row.services_used,
+      status: row.status as any,
+      contractUrl: signedUrl !== undefined ? signedUrl : row.contract_url,
+      notes: row.notes,
+      createdAt: row.created_at,
+
+      customerName: row.customer_products?.customers?.profiles?.name,
+      customerId: row.customer_products?.customers?.id,
+      productName:
+        `${row.customer_products?.product_catalog?.name || ""} ${row.customer_products?.product_catalog?.model || ""}`.trim(),
+      installationLocation: row.customer_products?.installation_location,
+      schedules: (row.schedule_expected || [])
+        .sort((a: any, b: any) => new Date(a.expected_date).getTime() - new Date(b.expected_date).getTime())
+        .map((s: any) => ({
+          ...s,
+          taskId: s.tasks?.[0]?.id,
+        })),
+      contractValue: row.price || 0,
+    };
   }
 
   async findById(id: string): Promise<Contract | null> {
@@ -89,7 +162,9 @@ export class ContractsRepository {
       if (error.code === "PGRST116") return null;
       throw error;
     }
-    return this.mapToDomainAsync(data);
+
+    const signedUrl = await this.signContractUrl(data.contract_url);
+    return this.mapToDomain(data, signedUrl);
   }
 
   async update(id: string, data: any): Promise<Contract> {
@@ -101,7 +176,22 @@ export class ContractsRepository {
       .single();
 
     if (error) throw error;
-    return this.mapToDomainAsync(updated);
+    
+    const signedUrl = await this.signContractUrl(updated.contract_url);
+    return this.mapToDomain(updated, signedUrl);
+  }
+
+  async create(data: any): Promise<Contract> {
+    const { data: created, error } = await supabaseAdmin
+      .from(this.table)
+      .insert(data)
+      .select(this.selectQuery)
+      .single();
+
+    if (error) throw error;
+    
+    const signedUrl = await this.signContractUrl(created.contract_url);
+    return this.mapToDomain(created, signedUrl);
   }
 
   async remove(id: string): Promise<void> {
@@ -115,18 +205,13 @@ export class ContractsRepository {
 
     let path = pathOrUrl;
 
-    // Handle legacy Public URLs: Extract path if it matches the pattern
-    // Pattern: .../storage/v1/object/public/documents/{path}
     if (pathOrUrl.startsWith("http") && pathOrUrl.includes("/documents/")) {
       try {
-        // Split by 'documents/' and take the second part
-        // Example: .../documents/contracts/file.pdf -> contracts/file.pdf
         const parts = pathOrUrl.split("/documents/");
         if (parts.length > 1) {
           path = decodeURIComponent(parts[1]);
         }
       } catch (e) {
-        // If parsing fails, use original (likely dead, but safe fallback)
         console.warn("Failed to parse legacy public URL:", pathOrUrl);
       }
     }
@@ -134,11 +219,11 @@ export class ContractsRepository {
     try {
       const { data, error } = await supabaseAdmin.storage
         .from("documents")
-        .createSignedUrl(path, 3600); // 1 hour
+        .createSignedUrl(path, 3600);
 
       if (error || !data) {
         console.warn(`Failed to sign contract URL for path ${path}:`, error);
-        return pathOrUrl; // Return original if signing fails
+        return pathOrUrl;
       }
 
       return data.signedUrl;
@@ -146,35 +231,5 @@ export class ContractsRepository {
       console.warn(`Exception signing contract URL for path ${path}:`, e);
       return pathOrUrl;
     }
-  }
-
-  private async mapToDomainAsync(row: any): Promise<Contract> {
-    const signedUrl = await this.signContractUrl(row.contract_url);
-
-    return {
-      id: row.id,
-      customerProductId: row.customer_product_id,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      intervalMonths: row.interval_months,
-      totalService: row.total_service,
-      servicesUsed: row.services_used,
-      status: row.status as any,
-      contractUrl: signedUrl,
-      notes: row.notes,
-      createdAt: row.created_at,
-
-      // Relations
-      customerName: row.customer_products?.customers?.profiles?.name,
-      customerId: row.customer_products?.customers?.id,
-      productName:
-        `${row.customer_products?.product_catalog?.name || ""} ${row.customer_products?.product_catalog?.model || ""}`.trim(),
-      installationLocation: row.customer_products?.installation_location,
-      schedules: (row.schedule_expected || []).map((s: any) => ({
-        ...s,
-        taskId: s.tasks?.[0]?.id, // Map the first task ID if exists (assuming 1:1 or 1:N)
-      })),
-      contractValue: row.price || 0,
-    };
   }
 }

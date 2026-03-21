@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -9,9 +9,9 @@
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
+  // __InternalSupabase: {
+  //   PostgrestVersion: "13.0.5"
+  // }
   public: {
     Tables: {
       chat_messages: {
@@ -108,6 +108,7 @@ export type Database = {
           customer_id: string
           description: string | null
           id: string
+          installation_address_id: string | null
           installation_date: string
           installation_location: string
           installation_technician_id: string | null
@@ -115,14 +116,16 @@ export type Database = {
           order_product_id: string | null
           photo_url: string | null
           product_catalog_id: string
-          quantity_owned: number
+          quantity_owned: number | null
           status: Database["public"]["Enums"]["product_status"] | null
+          cust_product_price: number | null
         }
         Insert: {
           created_at?: string | null
           customer_id: string
           description?: string | null
           id?: string
+          installation_address_id?: string | null
           installation_date: string
           installation_location: string
           installation_technician_id?: string | null
@@ -130,14 +133,16 @@ export type Database = {
           order_product_id?: string | null
           photo_url?: string | null
           product_catalog_id: string
-          quantity_owned?: number
+          quantity_owned?: number | null
           status?: Database["public"]["Enums"]["product_status"] | null
+          cust_product_price?: number | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string
           description?: string | null
           id?: string
+          installation_address_id?: string | null
           installation_date?: string
           installation_location?: string
           installation_technician_id?: string | null
@@ -145,8 +150,9 @@ export type Database = {
           order_product_id?: string | null
           photo_url?: string | null
           product_catalog_id?: string
-          quantity_owned?: number
+          quantity_owned?: number | null
           status?: Database["public"]["Enums"]["product_status"] | null
+          cust_product_price?: number | null
         }
         Relationships: [
           {
@@ -157,11 +163,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "customer_products_installation_technician_id_fkey"
-            columns: ["installation_technician_id"]
+            foreignKeyName: "customer_products_installation_address_id_fkey"
+            columns: ["installation_address_id"]
             isOneToOne: false
-            referencedRelation: "service_log_customer_view"
-            referencedColumns: ["technician_id"]
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "customer_products_installation_technician_id_fkey"
@@ -188,30 +194,34 @@ export type Database = {
       }
       customers: {
         Row: {
-          address: string | null
-          address_type: Database["public"]["Enums"]["address_type"] | null
+          address_id: string | null
           created_at: string | null
           id: string
           phone: string | null
           status: Database["public"]["Enums"]["customer_status"] | null
         }
         Insert: {
-          address?: string | null
-          address_type?: Database["public"]["Enums"]["address_type"] | null
+          address_id?: string | null
           created_at?: string | null
           id: string
           phone?: string | null
           status?: Database["public"]["Enums"]["customer_status"] | null
         }
         Update: {
-          address?: string | null
-          address_type?: Database["public"]["Enums"]["address_type"] | null
+          address_id?: string | null
           created_at?: string | null
           id?: string
           phone?: string | null
           status?: Database["public"]["Enums"]["customer_status"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customers_id_fkey"
             columns: ["id"]
@@ -223,36 +233,36 @@ export type Database = {
       }
       invoices: {
         Row: {
-          amount: number
+          amount: number | null
           created_at: string | null
           customer_id: string
           id: string
-          invoice_number: string
+          invoice_number: string | null
           pdf_url: string | null
           related_id: string | null
-          related_type: Database["public"]["Enums"]["invoice_related_type"]
+          related_type: Database["public"]["Enums"]["invoice_related_type"] | null
           status: Database["public"]["Enums"]["invoice_status"] | null
         }
         Insert: {
-          amount: number
+          amount?: number | null
           created_at?: string | null
           customer_id: string
           id?: string
-          invoice_number?: string
+          invoice_number?: string | null
           pdf_url?: string | null
           related_id?: string | null
-          related_type: Database["public"]["Enums"]["invoice_related_type"]
+          related_type?: Database["public"]["Enums"]["invoice_related_type"] | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
         }
         Update: {
-          amount?: number
+          amount?: number | null
           created_at?: string | null
           customer_id?: string
           id?: string
-          invoice_number?: string
+          invoice_number?: string | null
           pdf_url?: string | null
           related_id?: string | null
-          related_type?: Database["public"]["Enums"]["invoice_related_type"]
+          related_type?: Database["public"]["Enums"]["invoice_related_type"] | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
         }
         Relationships: [
@@ -294,7 +304,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_read: boolean | null
-          payload: Json
+          payload: Json | null
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
@@ -302,7 +312,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          payload: Json
+          payload?: Json | null
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
@@ -310,8 +320,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          payload?: Json
-          type?: Database["public"]["Enums"]["notification_type"]
+          payload?: Json | null
+          type: Database["public"]["Enums"]["notification_type"]
           user_id?: string
         }
         Relationships: [
@@ -328,26 +338,26 @@ export type Database = {
         Row: {
           id: string
           order_id: string
-          price: number
+          price: number | null
           product_catalog_id: string
-          qty: number
-          subtotal: number
+          qty: number | null
+          subtotal: number | null
         }
         Insert: {
           id?: string
           order_id: string
-          price: number
+          price?: number | null
           product_catalog_id: string
-          qty: number
-          subtotal: number
+          qty?: number | null
+          subtotal?: number | null
         }
         Update: {
           id?: string
           order_id?: string
-          price?: number
+          price?: number | null
           product_catalog_id?: string
-          qty?: number
-          subtotal?: number
+          qty?: number | null
+          subtotal?: number | null
         }
         Relationships: [
           {
@@ -371,25 +381,25 @@ export type Database = {
           created_at: string | null
           customer_id: string
           id: string
-          order_date: string
+          order_date: string | null
           status: Database["public"]["Enums"]["order_status"] | null
-          total_amount: number
+          total_amount: number | null
         }
         Insert: {
           created_at?: string | null
           customer_id: string
           id?: string
-          order_date: string
+          order_date?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
-          total_amount: number
+          total_amount?: number | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string
           id?: string
-          order_date?: string
+          order_date?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
-          total_amount?: number
+          total_amount?: number | null
         }
         Relationships: [
           {
@@ -410,7 +420,7 @@ export type Database = {
           image_url: string | null
           model: string | null
           name: string
-          price: number
+          price: number | null
         }
         Insert: {
           category_id?: string | null
@@ -418,9 +428,9 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
-          model: string | null
+          model?: string | null
           name: string
-          price: number
+          price?: number | null
         }
         Update: {
           category_id?: string | null
@@ -430,7 +440,7 @@ export type Database = {
           image_url?: string | null
           model?: string | null
           name?: string
-          price?: number
+          price?: number | null
         }
         Relationships: [
           {
@@ -467,19 +477,19 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          name: string
+          name: string | null
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
           created_at?: string | null
           id: string
-          name: string
+          name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
           created_at?: string | null
           id?: string
-          name?: string
+          name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
         Relationships: []
@@ -489,36 +499,36 @@ export type Database = {
           contract_id: string | null
           created_at: string | null
           customer_product_id: string
-          expected_date: string
+          expected_date: string | null
           id: string
-          interval_months: number
+          interval_months: number | null
           job_id: string | null
           notes: string | null
-          source_type: Database["public"]["Enums"]["service_type"]
+          source_type: Database["public"]["Enums"]["service_type"] | null
           status: Database["public"]["Enums"]["schedule_status"] | null
         }
         Insert: {
           contract_id?: string | null
           created_at?: string | null
           customer_product_id: string
-          expected_date: string
+          expected_date?: string | null
           id?: string
-          interval_months: number
+          interval_months?: number | null
           job_id?: string | null
           notes?: string | null
-          source_type: Database["public"]["Enums"]["service_type"]
+          source_type?: Database["public"]["Enums"]["service_type"] | null
           status?: Database["public"]["Enums"]["schedule_status"] | null
         }
         Update: {
           contract_id?: string | null
           created_at?: string | null
           customer_product_id?: string
-          expected_date?: string
+          expected_date?: string | null
           id?: string
-          interval_months?: number
+          interval_months?: number | null
           job_id?: string | null
           notes?: string | null
-          source_type?: Database["public"]["Enums"]["service_type"]
+          source_type?: Database["public"]["Enums"]["service_type"] | null
           status?: Database["public"]["Enums"]["schedule_status"] | null
         }
         Relationships: [
@@ -555,9 +565,10 @@ export type Database = {
           job_evidence: Json | null
           job_id: string | null
           notes: string | null
-          pekerjaan: string
-          service_date: string
-          service_type: Database["public"]["Enums"]["service_type"]
+          pekerjaan: string | null
+          service_date: string | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
+          task_id: string | null
           technician_id: string
           teknisi_fee: number | null
         }
@@ -570,9 +581,10 @@ export type Database = {
           job_evidence?: Json | null
           job_id?: string | null
           notes?: string | null
-          pekerjaan: string
-          service_date: string
-          service_type: Database["public"]["Enums"]["service_type"]
+          pekerjaan?: string | null
+          service_date?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          task_id?: string | null
           technician_id: string
           teknisi_fee?: number | null
         }
@@ -585,9 +597,10 @@ export type Database = {
           job_evidence?: Json | null
           job_id?: string | null
           notes?: string | null
-          pekerjaan?: string
-          service_date?: string
-          service_type?: Database["public"]["Enums"]["service_type"]
+          pekerjaan?: string | null
+          service_date?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          task_id?: string | null
           technician_id?: string
           teknisi_fee?: number | null
         }
@@ -614,11 +627,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "service_log_technician_id_fkey"
-            columns: ["technician_id"]
+            foreignKeyName: "service_log_task_id_fkey"
+            columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "service_log_customer_view"
-            referencedColumns: ["technician_id"]
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "service_log_technician_id_fkey"
@@ -637,11 +650,12 @@ export type Database = {
           description: string | null
           expected_id: string | null
           id: string
+          job_id: string | null
           status: Database["public"]["Enums"]["task_status"] | null
-          task_date: string
-          task_type: string | null
+          task_date: string | null
+          task_type: Database["public"]["Enums"]["task_type"] | null
           technician_id: string | null
-          title: string
+          title: string | null
         }
         Insert: {
           created_at?: string | null
@@ -650,11 +664,12 @@ export type Database = {
           description?: string | null
           expected_id?: string | null
           id?: string
+          job_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
-          task_date: string
-          task_type?: string | null
+          task_date?: string | null
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           technician_id?: string | null
-          title: string
+          title?: string | null
         }
         Update: {
           created_at?: string | null
@@ -663,11 +678,12 @@ export type Database = {
           description?: string | null
           expected_id?: string | null
           id?: string
+          job_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
-          task_date?: string
-          task_type?: string | null
+          task_date?: string | null
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           technician_id?: string | null
-          title?: string
+          title?: string | null
         }
         Relationships: [
           {
@@ -692,11 +708,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tasks_technician_id_fkey"
-            columns: ["technician_id"]
+            foreignKeyName: "tasks_job_id_fkey"
+            columns: ["job_id"]
             isOneToOne: false
-            referencedRelation: "service_log_customer_view"
-            referencedColumns: ["technician_id"]
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "tasks_technician_id_fkey"
@@ -711,7 +727,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          name: string
+          name: string | null
           notes: string | null
           phone: string | null
           photo_url: string | null
@@ -719,7 +735,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          name: string
+          name?: string | null
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
@@ -727,12 +743,47 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          name?: string
+          name?: string | null
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
         }
         Relationships: []
+      }
+      addresses: {
+        Row: {
+          address_type: Database["public"]["Enums"]["address_type"] | null
+          created_at: string | null
+          cust_address: string
+          customer_id: string
+          id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          address_type?: Database["public"]["Enums"]["address_type"] | null
+          created_at?: string | null
+          cust_address: string
+          customer_id: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          address_type?: Database["public"]["Enums"]["address_type"] | null
+          created_at?: string | null
+          cust_address?: string
+          customer_id?: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -771,7 +822,7 @@ export type Database = {
       }
     }
     Functions: {
-      is_admin: { Args: never; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       address_type: "apartment" | "rumah" | "company"
@@ -780,18 +831,19 @@ export type Database = {
       invoice_related_type: "order" | "contract" | "service" | "other"
       invoice_status: "draft" | "sent" | "paid" | "cancelled"
       notification_type:
-      | "service_reminder"
-      | "invoice_created"
-      | "payment_received"
-      | "contract_expiring"
-      | "contract_activated"
-      | "service_completed"
-      | "general"
+        | "service_reminder"
+        | "invoice_created"
+        | "payment_received"
+        | "contract_expiring"
+        | "contract_activated"
+        | "service_completed"
+        | "general"
       order_status: "pending" | "paid" | "cancelled"
       product_status: "active" | "inactive" | "tradeIn"
-      schedule_status: "pending" | "done" | "canceled"
+      schedule_status: "pending" | "done" | "canceled" | "scheduled"
       service_type: "contract" | "perpanggil"
       task_status: "pending" | "completed" | "canceled"
+      task_type: "general" | "service"
       user_role: "admin" | "customer"
     }
     CompositeTypes: {
@@ -800,122 +852,104 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-  ? R
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : never
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : never
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : never
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
@@ -936,9 +970,10 @@ export const Constants = {
       ],
       order_status: ["pending", "paid", "cancelled"],
       product_status: ["active", "inactive", "tradeIn"],
-      schedule_status: ["pending", "done", "canceled"],
+      schedule_status: ["pending", "done", "canceled", "scheduled"],
       service_type: ["contract", "perpanggil"],
       task_status: ["pending", "completed", "canceled"],
+      task_type: ["general", "service"],
       user_role: ["admin", "customer"],
     },
   },

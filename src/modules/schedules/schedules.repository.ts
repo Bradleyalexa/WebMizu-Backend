@@ -25,7 +25,7 @@ export class SchedulesRepository {
         "Unknown",
       productName: row.customer_products?.product_catalog?.name,
       productModel: row.customer_products?.product_catalog?.model,
-      address: row.customer_products?.installation_location,
+      address: row.customer_products?.installation_location || row.customer_products?.installation_address?.cust_address,
     };
   }
 
@@ -41,8 +41,8 @@ export class SchedulesRepository {
         *,
         jobs ( name ),
         customer_products!inner (
-          id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers!inner (
             id,
@@ -126,6 +126,7 @@ export class SchedulesRepository {
         customer_products (
           id,
           installation_location,
+          installation_address:addresses!customer_products_installation_address_id_fkey(cust_address),
           product_catalog ( name, model ),
           customers (
             id,

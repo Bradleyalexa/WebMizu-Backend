@@ -9,17 +9,34 @@ export class ServiceLogController {
     this.repository = new ServiceLogRepository();
   }
 
-  update = async (req: Request, res: Response) => {
+  findAll = async (req: Request, res: Response, next: any) => {
+    try {
+      const search = req.query["search"] as string;
+      const customerProductId = req.query["customerProductId"] as string;
+      const customerId = req.query["customerId"] as string;
+
+      const logs = await this.repository.findAll({
+        search,
+        customerProductId,
+        customerId,
+      });
+
+      res.json({ success: true, data: logs });
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  update = async (req: Request, res: Response, next: any) => {
     try {
       const id = req.params.id as string;
-      if (!id) return res.status(400).json({ error: "ID is required" });
+      if (!id) return res.status(400).json({ success: false, error: "ID is required" });
 
       const payload = updateServiceLogSchema.parse(req.body);
       const log = await this.repository.update(id, payload);
-      res.json({ data: log });
+      res.json({ success: true, data: log });
     } catch (error: any) {
-      console.error("Update Service Log Error:", error);
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   };
 }

@@ -1,3 +1,4 @@
+import { supabaseAdmin } from "../../db/supabase";
 import { TasksRepository } from "./tasks.repository";
 import { SchedulesRepository } from "../schedules/schedules.repository";
 import { CreateServiceLogDTO } from "../service-logs/dto/service-log.dto";
@@ -221,8 +222,6 @@ export class TasksService {
   }
   async completeTask(id: string, logData: CreateServiceLogDTO) {
     // 1. Create the Service Log
-    // We need to ensure logData has the correct expected_id or job_id if applicable
-    // Ideally the FE passes everything, but we can enrich if needed.
     const log = await this.logsRepo.create({
       ...logData,
       expected_id: logData.expected_id && logData.expected_id !== "" ? logData.expected_id : null,
@@ -230,15 +229,81 @@ export class TasksService {
       task_id: id, // Link to Task ID
     });
 
-    // 2. Update Task Status to 'completed'
-    // or Schedule Status to 'done'
+    // 2. Update Task status to 'completed' AND linked schedule to 'done'
+    const linkedExpectedId = logData.expected_id && logData.expected_id !== "" ? logData.expected_id : null;
     try {
-      await this.update(id, { status: "completed" });
+      await this.repository.update(id, { status: "completed" });
     } catch (err) {
-      // If update fails, we might want to rollback log creation?
-      // For MVP, simplistic erroring is okay, but ideally we warn user.
       console.error("Failed to mark task as completed after log creation:", err);
       throw new Error("Service Log created, but failed to update Task status.");
+    }
+
+    // Also mark the linked schedule as 'done' so contract detail page reflects completion
+    if (linkedExpectedId) {
+      try {
+        await this.schedulesRepo.update(linkedExpectedId, { status: "done" } as any);
+        console.log(`[ScheduleUpdate] Marked schedule ${linkedExpectedId} as done`);
+      } catch (err) {
+        // Non-fatal: schedule status update failure shouldn't fail the completion
+        console.warn(`[ScheduleUpdate] Could not mark schedule ${linkedExpectedId} as done:`, err);
+      }
+    }
+
+    // 3. Increment services_used on the linked contract (if any)
+    try {
+      // If no expected_id was passed, fall back to task's stored expectedId
+      const resolvedExpectedId = linkedExpectedId || (await this.repository.findById(id))?.expectedId || null;
+
+      // Also mark the schedule as done if we found it via task fallback (not already handled above)
+      if (resolvedExpectedId && !linkedExpectedId) {
+        try {
+          await this.schedulesRepo.update(resolvedExpectedId, { status: "done" } as any);
+        } catch (_) { /* non-fatal */ }
+      }
+
+      if (resolvedExpectedId) {
+        const { data: scheduleRow, error: scheduleErr } = await supabaseAdmin
+          .from("schedule_expected")
+          .select("contract_id")
+          .eq("id", resolvedExpectedId)
+          .single();
+
+        if (!scheduleErr && scheduleRow?.contract_id) {
+          const contractId = scheduleRow.contract_id;
+
+          const { data: contractRow, error: contractFetchErr } = await supabaseAdmin
+            .from("contracts")
+            .select("services_used, total_service")
+            .eq("id", contractId)
+            .single();
+
+          if (!contractFetchErr && contractRow) {
+            const newCount = (contractRow.services_used || 0) + 1;
+            const totalService = contractRow.total_service || 0;
+
+            // Check if all services are completed
+            const updatePayload: any = { services_used: newCount };
+            if (newCount >= totalService) {
+              updatePayload.status = 'expired';
+              console.log(`[ContractUpdate] All services completed (${newCount}/${totalService}). Marking contract as expired.`);
+            }
+
+            const { error: updateErr } = await supabaseAdmin
+              .from("contracts")
+              .update(updatePayload)
+              .eq("id", contractId);
+
+            if (updateErr) {
+              console.warn(`[ContractUpdate] Failed to increment services_used for contract ${contractId}:`, updateErr);
+            } else {
+              console.log(`[ContractUpdate] Incremented services_used to ${newCount} for contract ${contractId}`);
+            }
+          }
+        }
+      }
+    } catch (incrementErr) {
+      // Non-fatal: log the error but don't fail the completion
+      console.warn("[ContractUpdate] Could not auto-increment services_used:", incrementErr);
     }
 
     return log;
