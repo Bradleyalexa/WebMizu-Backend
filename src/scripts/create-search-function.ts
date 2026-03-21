@@ -20,16 +20,10 @@ async function createSearchFunction() {
     $$;
   `;
 
-  const { error } = await supabaseAdmin.rpc("", {} as any);
-  // Use raw SQL via the admin client
-  const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/`, {
-    method: "POST",
-  });
-  
-  // Actually use the pg connection string approach
-  const { data, error: err } = await (supabaseAdmin as any).from("_sql").select(sql);
-  
-  console.log("Result:", data, err);
+  // This script is for manual execution only
+  // Execute the SQL directly in your Supabase SQL editor
+  console.log("SQL to execute:");
+  console.log(sql);
 }
 
 createSearchFunction().catch(console.error);

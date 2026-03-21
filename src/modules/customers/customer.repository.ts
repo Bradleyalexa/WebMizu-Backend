@@ -79,7 +79,7 @@ export class CustomerRepository {
       }));
 
       const filtered = (addressType && addressType !== "all")
-        ? results.filter((c) => c.addressType === addressType)
+        ? results.filter((c: Customer) => c.addressType === addressType)
         : results;
 
       return { data: filtered, total: filtered.length };
