@@ -10,7 +10,7 @@ export const createCustomerSchema = z.object({
     .string()
     .min(8, "Phone number is required")
     .regex(/^\+?[0-9\s-]*$/, "Invalid phone format"),
-  address: z.string().min(5, "Address is required"),
+  address: z.string().min(5, "Address is required").optional(),
   addressType: AddressTypeEnum.optional().default("rumah"),
   status: CustomerStatusEnum.optional().default("active"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
