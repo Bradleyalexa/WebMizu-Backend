@@ -50,4 +50,5 @@ export const customerQuerySchema = z.object({
   limit: z.string().optional(),
   search: z.string().optional(),
   addressType: z.union([AddressTypeEnum, z.literal("all")]).optional(),
+  status: z.union([CustomerStatusEnum, z.literal("all")]).optional(),
 });

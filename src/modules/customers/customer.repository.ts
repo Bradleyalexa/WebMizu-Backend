@@ -27,7 +27,7 @@ export class CustomerRepository {
   }
 
   async findAll(query: CustomerQueryDTO): Promise<{ data: Customer[]; total: number }> {
-    const { page, limit, search, addressType } = query;
+    const { page, limit, search, addressType, status } = query;
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
     const from = (pageNum - 1) * limitNum;
@@ -49,11 +49,14 @@ export class CustomerRepository {
 
         let fallbackQuery = this.supabase.from("customers").select(
           `*, profiles!inner(name, email), ${addressJoin2}(id, cust_address, address_type, is_primary)`,
-          { count: "exact" }
+          { count: "estimated" }
         ).ilike("phone", `%${search}%`);
 
         if (addressType && addressType !== "all") {
           fallbackQuery = fallbackQuery.eq("addresses.address_type", addressType);
+        }
+        if (status && status !== "all") {
+          fallbackQuery = fallbackQuery.eq("status", status);
         }
 
         const { data: fbData, count: fbCount, error: fbError } = await fallbackQuery
@@ -78,9 +81,11 @@ export class CustomerRepository {
         createdAt: row.created_at,
       }));
 
-      const filtered = (addressType && addressType !== "all")
-        ? results.filter((c: Customer) => c.addressType === addressType)
-        : results;
+      const filtered = results.filter((c: Customer) => {
+        const matchAddress = (addressType && addressType !== "all") ? c.addressType === addressType : true;
+        const matchStatus = (status && status !== "all") ? c.status === status : true;
+        return matchAddress && matchStatus;
+      });
 
       return { data: filtered, total: filtered.length };
     }
@@ -104,11 +109,16 @@ export class CustomerRepository {
       )
     `;
 
-    let queryBuilder = this.supabase.from("customers").select(selectString, { count: "exact" });
+    let queryBuilder = this.supabase.from("customers").select(selectString, { count: "estimated" });
 
     // Handle Address Type Filter
     if (addressType && addressType !== "all") {
       queryBuilder = queryBuilder.eq("addresses.address_type", addressType);
+    }
+
+    // Handle Status Filter
+    if (status && status !== "all") {
+      queryBuilder = queryBuilder.eq("status", status);
     }
 
     const { data, count, error } = await queryBuilder
