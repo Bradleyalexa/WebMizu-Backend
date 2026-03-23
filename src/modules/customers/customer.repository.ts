@@ -150,8 +150,26 @@ export class CustomerRepository {
     if (error) return null;
     return this.mapToDomain(data);
   }
-
   async create(payload: CreateCustomerDTO): Promise<Customer> {
+    // 0. Pre-check for duplicate phone number + name combination
+    if (payload.phone) {
+      const { data: existingCustomers } = await this.supabase
+        .from("customers")
+        .select("id, profiles!inner(name)")
+        .eq("phone", payload.phone);
+        
+      if (existingCustomers && existingCustomers.length > 0) {
+        // Check if any of these have the same name (case-insensitive and trimmed)
+        const duplicate = existingCustomers.find((c: any) => 
+          c.profiles?.name?.toLowerCase().trim() === payload.name.toLowerCase().trim()
+        );
+        
+        if (duplicate) {
+          throw new Error("Customer with this exact name and phone number already exists");
+        }
+      }
+    }
+
     // 1. Create Auth User (Triggers handle_new_user -> creates Profile & Customer)
     const email = payload.email || `customer_${Date.now()}@webmizu.local`;
     
@@ -169,79 +187,123 @@ export class CustomerRepository {
 
     const id = authData.user.id;
 
-    // 2. Create Addresses if provided
-    let primaryAddressId = null;
-    
-    if (payload.addresses && payload.addresses.length > 0) {
-      const addressesToInsert = payload.addresses.map((a) => ({
-        cust_address: a.custAddress,
-        address_type: a.addressType || "rumah",
-        is_primary: a.isPrimary || false,
-        customer_id: id,
-      }));
-
-      const { data: insertedAddresses, error: addressError } = await this.supabase
-        .from("addresses")
-        .insert(addressesToInsert)
-        .select();
-
-      if (addressError) throw addressError;
-
-      const primary = insertedAddresses.find((a) => a.is_primary) || insertedAddresses[0];
-      if (primary) {
-        primaryAddressId = primary.id;
-      }
-    } else if (payload.address) {
-      // Legacy fallback
-      const { data: addressData, error: addressError } = await this.supabase
-        .from("addresses")
-        .insert({
-          cust_address: payload.address,
-          address_type: payload.addressType || "rumah",
-          is_primary: true,
-          customer_id: id,
-        })
-        .select()
-        .single();
+    try {
+      // 2. Create Addresses if provided
+      let primaryAddressId = null;
       
-      if (addressError) throw addressError;
-      primaryAddressId = addressData.id;
-    }
+      if (payload.addresses && payload.addresses.length > 0) {
+        const addressesToInsert = payload.addresses.map((a) => ({
+          cust_address: a.custAddress,
+          address_type: a.addressType || "rumah",
+          is_primary: a.isPrimary || false,
+          customer_id: id,
+        }));
 
-    // 3. Update Customer details (Trigger only created the row with ID)
-    const { data, error: updateError } = await this.supabase
-      .from("customers")
-      .update({
-        phone: payload.phone,
-        address_id: primaryAddressId,
-        status: payload.status,
-      })
-      .eq("id", id)
-      .select(
-        `
-        *,
-        profiles!inner (
-          name,
-          email
-        ),
-        addresses!addresses_customer_id_fkey (
-          id,
-          cust_address,
-          address_type,
-          is_primary
+        const { data: insertedAddresses, error: addressError } = await this.supabase
+          .from("addresses")
+          .insert(addressesToInsert)
+          .select();
+
+        if (addressError) throw addressError;
+
+        const primary = insertedAddresses.find((a) => a.is_primary) || insertedAddresses[0];
+        if (primary) {
+          primaryAddressId = primary.id;
+        }
+      } else if (payload.address) {
+        // Legacy fallback
+        const { data: addressData, error: addressError } = await this.supabase
+          .from("addresses")
+          .insert({
+            cust_address: payload.address,
+            address_type: payload.addressType || "rumah",
+            is_primary: true,
+            customer_id: id,
+          })
+          .select()
+          .single();
+        
+        if (addressError) throw addressError;
+        primaryAddressId = addressData.id;
+      }
+
+      // 3. Update Customer details (Trigger only created the row with ID)
+      const { data, error: updateError } = await this.supabase
+        .from("customers")
+        .update({
+          phone: payload.phone,
+          address_id: primaryAddressId,
+          status: payload.status,
+        })
+        .eq("id", id)
+        .select(
+          `
+          *,
+          profiles!inner (
+            name,
+            email
+          ),
+          addresses!addresses_customer_id_fkey (
+            id,
+            cust_address,
+            address_type,
+            is_primary
+          )
+        `,
         )
-      `,
-      )
-      .single();
+        .single();
 
-    if (updateError) {
-      throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
+
+      return this.mapToDomain(data);
+    } catch (error) {
+      // Rollback user creation if anything fails during the process
+      await this.supabase.auth.admin.deleteUser(id);
+      throw error;
     }
-
-    return this.mapToDomain(data);
   }
 
   async update(id: string, payload: UpdateCustomerDTO): Promise<Customer> {
+    // 0. Pre-check for duplicate phone number + name combination on update
+    if (payload.phone || payload.name) {
+      let targetPhone = payload.phone;
+      let targetName = payload.name;
+
+      // If either property is missing from payload, fetch the current values
+      if (!targetPhone || !targetName) {
+        const { data: currentCustomer } = await this.supabase
+          .from("customers")
+          .select("phone, profiles!inner(name)")
+          .eq("id", id)
+          .single();
+          
+        if (currentCustomer) {
+          if (!targetPhone) targetPhone = currentCustomer.phone || undefined;
+          if (!targetName) targetName = (currentCustomer.profiles as any)?.name || undefined;
+        }
+      }
+
+      if (targetPhone && targetName) {
+        const { data: existingCustomers } = await this.supabase
+          .from("customers")
+          .select("id, profiles!inner(name)")
+          .eq("phone", targetPhone)
+          .neq("id", id);
+          
+        if (existingCustomers && existingCustomers.length > 0) {
+          const duplicate = existingCustomers.find((c: any) => 
+            c.profiles?.name?.toLowerCase().trim() === targetName!.toLowerCase().trim()
+          );
+          
+          if (duplicate) {
+            throw new Error("Another customer with this exact name and phone number already exists");
+          }
+        }
+      }
+    }
+
     // 1. Update Profile if name is provided (Email logic depends if we allow changing it here)
     // For now, only name update in profile. Email update involves Auth API usually.
     if (payload.name) {
