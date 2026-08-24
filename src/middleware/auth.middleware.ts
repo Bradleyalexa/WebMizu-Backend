@@ -39,7 +39,39 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
       error,
     } = await supabaseAuth.auth.getUser(token);
 
-    if (error || !user) {
+    if (error) {
+      const status = "status" in error && typeof error.status === "number" ? error.status : undefined;
+      const isAuthProviderUnavailable =
+        error.name === "AuthRetryableFetchError" || status === undefined || status >= 500;
+
+      if (isAuthProviderUnavailable) {
+        console.error("Supabase auth verification is unavailable", {
+          name: error.name,
+          message: error.message,
+          status,
+        });
+
+        return res.status(503).json({
+          success: false,
+          data: null,
+          error: {
+            code: "AUTH_PROVIDER_UNAVAILABLE",
+            message: "Authentication service is temporarily unavailable",
+          },
+        });
+      }
+
+      return res.status(401).json({
+        success: false,
+        data: null,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Invalid or expired token",
+        },
+      });
+    }
+
+    if (!user) {
       return res.status(401).json({
         success: false,
         data: null,
